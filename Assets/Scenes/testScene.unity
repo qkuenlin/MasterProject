@@ -916,7 +916,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 12
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1859813602
 Prefab:
@@ -1117,15 +1117,15 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 75ab66e5d34c81346a9431c0048efa0d, type: 2}
   - {fileID: 2100000, guid: 55740804ca9dd964d87cb8061f9e974e, type: 2}
   LiveUpdate: 0
-  EnableNoiseUV: 0
-  NoiseUVScale: 0
-  NoiseUVStrength: 0
-  EnableNoiseHue: 0
-  NoiseHueScale: 0
-  NoiseHueStrength: 0
+  EnableNoiseUV: 1
+  NoiseUVScale: 100
+  NoiseUVStrength: 0.001
+  EnableNoiseHue: 1
+  NoiseHueScale: 13
+  NoiseHueStrength: 0.05
   EnableNoiseLum: 0
-  NoiseLumScale: 0
-  NoiseLumStrength: 0
+  NoiseLumScale: 17
+  NoiseLumStrength: 0.5
   Tessellation: 0
   EnableDetails: 1
   EnableNormalMaps: 1
@@ -1241,7 +1241,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 11
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2117796500
 Prefab:

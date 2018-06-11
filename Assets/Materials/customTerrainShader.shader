@@ -576,9 +576,22 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return R0 + (1 - R0)*cos_theta_m1*cos_theta_m1*cos_theta_m1*cos_theta_m1*cos_theta_m1;
 			}
 
-			float G(float3 N, float3 H, float3 V, float3 L)
+			float Geom(float3 v, float3 H, float3 N, float roughness)
 			{
-				return min(min(1.0f, (2.0f * dot(H, N) * dot(V, N)) / dot(V, H)), 2.0f*dot(H, N)*dot(L, N) / dot(V, H));
+				float cosTheta = dot(v, N);
+				float tmp = 1 - cosTheta * cosTheta;
+
+				if (tmp <= 0) return 0.0;
+				float tanTheta = abs(sqrt(tmp) / cosTheta);
+
+				if (dot(v, H) / dot(v, N) <= 0) {
+					return 0.0;
+				}
+
+				float b = 1.0f / (roughness * tanTheta);
+				if (b > 1.6) return 1.0f;
+
+				return (3.535f*b + 2.181f*b*b) / (1.0f + 2.276f*b + 2.577f*b*b);
 			}
 
 			float erfc(float x) {
@@ -640,21 +653,30 @@ Shader "Custom/customTerrainShader_hlsl" {
 				Normal.x = dot(tspace0, N.xyz);
 				Normal.y = dot(tspace1, N.xyz);
 				Normal.z = dot(tspace2, N.xyz);
+
+				float cosThetaO = (dot(Normal, L));
+				float cosThetaI = (dot(V, Normal));
+				float cosThetaH = dot(H, Normal);
 				
 				float F = fresnel(Normal, V, 1.5f);
-				float D = beckman(Normal, H, roughness+roughness);
+				float D = beckman(Normal, H, roughness) / cosThetaH;
+				float G = Geom(V, H, Normal, roughness)*Geom(L, H, Normal, roughness);
 
-				float dotNL = (dot(Normal, L));
-				float dotVN = dot(V, Normal);
-
-				float dotNL_ = dotNL>=0.5 ? (sqrt(2 * dotNL - 1)+1)/2.0 : 1-(sqrt(1-2 * dotNL) + 1) / 2.0;
-				fixed4 specular = saturate(D * F * G(Normal, H, V, L) / (4.0f*dotVN*dotNL));
-				fixed4 diffuse = albedo * dotNL_ *_LightColor0;
+				float dotNL_ = cosThetaO >=0.5 ? (sqrt(2 * cosThetaO - 1)+1)/2.0 : 1-(sqrt(1-2 * cosThetaO) + 1) / 2.0;
+				fixed4 specular = saturate(D * F * G / (4.0f*cosThetaI*cosThetaO*cosThetaH));
+				fixed4 diffuse = albedo *_LightColor0 * dotNL_;
 				fixed4 ambient = albedo * (_AmbientLightStrength*_AmbientLightColor + unity_AmbientGround + unity_AmbientEquator + unity_AmbientSky);
 
-				float maxKd = max(diffuse.r, max(diffuse.y, diffuse.z));
+				float maxKd = max(diffuse.r, max(diffuse.y, diffuse.z));				
+				/*s
+				float A = 1 - 0.5*roughness*roughness / (roughness*roughness + 0.33);
+				float B = 0.45*roughness*roughness / (roughness*roughness + 0.09);
+				*/
 
-				return  (diffuse + /*(1.0-maxKd)*/specular + ambient);
+			//	return diffuse / 3.141592 * (A + B * cosPhi * sinTheta*tanTheta);
+
+
+				return  (diffuse + specular) + ambient;
 			}
 
 			float4 Gravel(v2f input, float weight) {
@@ -932,7 +954,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				float D = GGX(N, H, _WaterRoughness);
 
-				fixed4 specular = _LightColor0 * D * F * G(N, H, V, L) / (4.0f*dot(V, N)*dot(N, L));
+				fixed4 specular = _LightColor0 * D * F * Geom(N, H, V, L) / (4.0f*dot(V, N)*dot(N, L));
 				fixed4 diffuse = _WaterColor * dot(N, L) * _LightColor0;
 				fixed4 ambient = _WaterColor * (float4(0.6, 0.7, 0.95, 1.0) + unity_AmbientGround + unity_AmbientEquator + unity_AmbientSky);
 
@@ -958,6 +980,8 @@ Shader "Custom/customTerrainShader_hlsl" {
 				L = normalize(input.lightDirection.xyz);
 				H = normalize(V + L);
 
+				//return float4(microfacet(input, float4(1, 1, 1, 1), float3(0,0,1), _RockRoughnessModifier).rgb, 1.0);
+
 				Depth = length(_WorldSpaceCameraPos - input.worldSpacePosition.xyz);
 				Depth = Depth / 200.0f;
 
@@ -974,12 +998,12 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float4 DGR = tex2D(_ClassesDGR, input.uv);
 				float4 WSGT = tex2D(_ClassesWSGT, input.uv);
 
-				UV = input.uv + (0.1*Normal.xz);//*0.1f;
+				UV = input.uv;// +(0.1*Normal.xz);//*0.1f;
 
 				//return float4(UV.xy, 0.0, 1.0);
 				//return float4(2*(Normal-0.5), 1.0);
 				
-				return float4(Grass(input, 1.0).rgb, 1.0);
+				//return float4(Grass(input, 1.0).rgb, 1.0);
 
 				float4 Color = float4(0, 0, 0, 1.0);
 
