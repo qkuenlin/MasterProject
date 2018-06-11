@@ -1,0 +1,72 @@
+fileFormatVersion: 2
+guid: f708fb1e99d4dbe4481cbeaea9f7ae94
+ScriptedImporter:
+  fileIDToRecycleName:
+    100002: m5760-8724/m5760-8724
+    400002: m5760-8724/m5760-8724/Transform
+    2100000: mat.New_Graph
+    2300002: m5760-8724/m5760-8724/MeshRenderer
+    2800000: New_Graph_Base Color
+    2800002: New_Graph_Normal
+    2800004: New_Graph_Height
+    2800006: New_Graph_Roughness
+    3300002: m5760-8724/m5760-8724/MeshFilter
+    11400000: sbsar
+    11400002: graph0
+    13500002: m5760-8724/m5760-8724/SphereCollider
+    100100002: m5760-8724
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 232528478, guid: b954f3890f55cb14dba21eeeb19a7462, type: 3}
+  mGraphInstanceData:
+  - graphLabel: New_Graph
+    graphDescIndex: 0
+    generateAllOutputs: 1
+    generateMipMaps: 1
+    preset: " <sbspreset pkgurl=\"pkg://New_Graph\" label=\"\" >\n </sbspreset>\n"
+    shaderName: Standard (Roughness setup)
+    outputNames: Base Color,Normal,Height
+    texturePackingList: []
+    colorSpaceList:
+    - outputName: Base Color
+      bLinear: 0
+    - outputName: Normal
+      bLinear: 1
+    - outputName: Roughness
+      bLinear: 1
+    - outputName: Height
+      bLinear: 1
+    inputTextureMap:
+    - inputName: Segmentation_Image
+      texturePath: Assets/Objects/Terrains/Schlegeisspeicher/patchwork_5760-8724.png
+      texture2D: {fileID: 2800000, guid: 0cd11573d2d769b46aaa6b3f6cf1b7fd, type: 3}
+    - inputName: Satellite_Image
+      texturePath: Assets/Objects/Terrains/Schlegeisspeicher/tex_5760-8724.jpg
+      texture2D: {fileID: 2800000, guid: d04cf023ae5cf4947aa5892bc4309208, type: 3}
+    targetSettingList:
+    - label: Default
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 0
+      textureHeight: 0
+      textureFormat: 0
+      loadBehavior: 0
+    - label: Standalone
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 0
+      textureHeight: 0
+      textureFormat: 0
+      loadBehavior: 0
+    - label: iPhone
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 0
+      textureHeight: 0
+      textureFormat: 0
+      loadBehavior: 0

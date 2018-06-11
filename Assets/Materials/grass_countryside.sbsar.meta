@@ -1,0 +1,106 @@
+fileFormatVersion: 2
+guid: dc9a4a0062afe0045a93f0096b0c0124
+ScriptedImporter:
+  fileIDToRecycleName:
+    100000: grass_countryside/grass_countryside
+    400000: grass_countryside/grass_countryside/Transform
+    2100000: mat.Grass Countryside
+    2300000: grass_countryside/grass_countryside/MeshRenderer
+    2800000: Grass Countryside_Base Color
+    2800002: Grass Countryside_Normal
+    2800004: Grass Countryside_Metallic
+    2800006: Grass Countryside_Height
+    2800008: Grass Countryside_Ambient Occlusion
+    3300000: grass_countryside/grass_countryside/MeshFilter
+    11400000: sbsar
+    11400002: graph0
+    13500000: grass_countryside/grass_countryside/SphereCollider
+    100100000: grass_countryside
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 232528478, guid: b954f3890f55cb14dba21eeeb19a7462, type: 3}
+  mGraphInstanceData:
+  - graphLabel: Grass Countryside
+    graphDescIndex: 0
+    generateAllOutputs: 0
+    generateMipMaps: 1
+    preset: " <sbspreset pkgurl=\"pkg://grass_countryside\" label=\"\" >\n  <presetinput
+      identifier=\"$outputsize\" uid=\"4109211753\" type=\"8\" value=\"11,11\" />\n
+      \ <presetinput identifier=\"$randomseed\" uid=\"2745142843\" type=\"4\" value=\"2126\"
+      />\n  <presetinput identifier=\"grass_additional_color\" uid=\"2243937192\"
+      type=\"2\" value=\"1,1,1\" />\n  <presetinput identifier=\"color_imperfections\"
+      uid=\"2237582283\" type=\"0\" value=\"0.806\" />\n  <presetinput identifier=\"grass_roughness\"
+      uid=\"2237610764\" type=\"0\" value=\"0.851\" />\n  <presetinput identifier=\"leaf_density\"
+      uid=\"2237582163\" type=\"0\" value=\"0.087\" />\n  <presetinput identifier=\"stick_density\"
+      uid=\"2237581878\" type=\"0\" value=\"0.07\" />\n  <presetinput identifier=\"metallic\"
+      uid=\"2290858195\" type=\"4\" value=\"0\" />\n  <presetinput identifier=\"contrast\"
+      uid=\"2385832176\" type=\"0\" value=\"-0.11\" />\n  <presetinput identifier=\"normal_intensity\"
+      uid=\"4054900403\" type=\"0\" value=\"0.619\" />\n </sbspreset>\n"
+    shaderName: Standard
+    outputNames: Base Color,Normal,Metallic,Height,Ambient Occlusion
+    texturePackingList:
+    - outputName: Diffuse
+      alphaSource: Diffuse
+    - outputName: Base Color
+      alphaSource: Base Color
+    - outputName: Normal
+      alphaSource: Normal
+    - outputName: Specular
+      alphaSource: Specular
+    - outputName: Glossiness
+      alphaSource: Glossiness
+    - outputName: Roughness
+      alphaSource: Roughness
+    - outputName: Metallic
+      alphaSource: Smoothness
+    - outputName: Height
+      alphaSource: Height
+    - outputName: Ambient Occlusion
+      alphaSource: Ambient Occlusion
+    colorSpaceList:
+    - outputName: Diffuse
+      bLinear: 0
+    - outputName: Base Color
+      bLinear: 0
+    - outputName: Normal
+      bLinear: 1
+    - outputName: Specular
+      bLinear: 0
+    - outputName: Glossiness
+      bLinear: 1
+    - outputName: Roughness
+      bLinear: 1
+    - outputName: Metallic
+      bLinear: 1
+    - outputName: Height
+      bLinear: 1
+    - outputName: Ambient Occlusion
+      bLinear: 1
+    inputTextureMap: []
+    targetSettingList:
+    - label: Default
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 2048
+      textureHeight: 2048
+      textureFormat: 0
+      loadBehavior: 0
+    - label: Standalone
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 256
+      textureHeight: 256
+      textureFormat: 0
+      loadBehavior: 0
+    - label: iPhone
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 256
+      textureHeight: 256
+      textureFormat: 0
+      loadBehavior: 0

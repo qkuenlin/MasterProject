@@ -1,0 +1,183 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel FFTY
+#pragma kernel FFTX
+#pragma kernel Init
+#pragma kernel Variance
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2DArray<float4> Output : register(u0);
+RWTexture3D<float4> SlopeVariance : register(u1);
+
+Texture2DArray<float4> Input : register(t0);
+Texture2D<float4> ButterFly : register(t1);
+float _pass;
+
+int N_SLOPE_VARIANCE;
+float slopeVarianceDelta;
+
+float FFT_SIZE;
+float4 INVERSE_GRID_SIZE;
+float4 GRID_SIZE;
+float Time;
+
+float PI = 3.1415;
+
+SamplerState samplerButterFly
+{
+	Filter = MIN_MAG_MIP_LINEAR;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+SamplerState samplerInput
+{
+	Filter = MIN_MAG_MIP_LINEAR;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+float2 getSpectrum(float k, float2 s0, float2 s0c) {
+
+	float w = sqrt(9.81 * k * (1.0 + k * k / (370.0 * 370.0)));
+	float c = cos(w * Time);
+	float s = sin(w * Time);
+	return float2((s0.x + s0c.x) * c - (s0.y + s0c.y) * s, (s0.x - s0c.x) * s + (s0.y - s0c.y) * c);
+}
+
+float2 i(float2 z) {
+	return float2(-z.y, z.x); // returns i times z (complex number)
+}
+
+[numthreads(8, 8, 5)]
+void Init(uint3 id : SV_DispatchThreadID)
+{
+	float scale = 1.0f / FFT_SIZE;
+
+	float2 uv = id.xy * scale;
+	float2 st = float2(floor(1.0f * uv.x * FFT_SIZE) / FFT_SIZE, floor(1.0f* uv.y * FFT_SIZE) / FFT_SIZE);
+	float x = uv.x > 0.5f ? st.x - 1.0f : st.x;
+	float y = uv.y > 0.5f ? st.y - 1.0f : st.y;
+
+	float4 s12 = Input[uint3(id.x, id.y, 0)];
+	float4 s34 = Input[uint3(id.x, id.y, 1)];
+
+	uint2 tmp = uint2((float2(1.0f + 0.5f / FFT_SIZE, 1.0f + 0.5f / FFT_SIZE) - st)*FFT_SIZE);
+	float4 s12c = Input[uint3(tmp.x, tmp.y, 0)];
+	float4 s34c = Input[uint3(tmp.x, tmp.y, 1)];
+
+	float2 k1 = float2(x, y) * INVERSE_GRID_SIZE.x;
+	float2 k2 = float2(x, y) * INVERSE_GRID_SIZE.y;
+	float2 k3 = float2(x, y) * INVERSE_GRID_SIZE.z;
+	float2 k4 = float2(x, y) * INVERSE_GRID_SIZE.w;
+
+	float K1 = length(k1);
+	float K2 = length(k2);
+	float K3 = length(k3);
+	float K4 = length(k4);
+
+	float IK1 = K1 == 0.0 ? 0.0 : 1.0 / K1;
+	float IK2 = K2 == 0.0 ? 0.0 : 1.0 / K2;
+	float IK3 = K3 == 0.0 ? 0.0 : 1.0 / K3;
+	float IK4 = K4 == 0.0 ? 0.0 : 1.0 / K4;
+
+	float2 h1 = getSpectrum(K1, s12.xy, s12c.xy);
+	float2 h2 = getSpectrum(K2, s12.zw, s12c.zw);
+	float2 h3 = getSpectrum(K3, s34.xy, s34c.xy);
+	float2 h4 = getSpectrum(K4, s34.zw, s34c.zw);
+
+	Output[uint3(id.x, id.y, 0)] = float4(h1 + i(h2), h3 + i(h4));
+	Output[uint3(id.x, id.y, 1)] = float4(i(k1.x * h1) - k1.y * h1, i(k2.x * h2) - k2.y * h2);
+	Output[uint3(id.x, id.y, 2)] = float4(i(k3.x * h3) - k3.y * h3, i(k4.x * h4) - k4.y * h4);
+	Output[uint3(id.x, id.y, 3)] = Output[uint3(id.x, id.y, 1)] * float4(IK1, IK1, IK2, IK2);
+	Output[uint3(id.x, id.y, 4)] = Output[uint3(id.x, id.y, 2)] * float4(IK3, IK3, IK4, IK4);
+}
+
+float4 fft2X(int layer, float2 i, float2 w, float2 uv)
+{
+	float4 input1 = Input.SampleLevel(samplerInput, float3(i.x, uv.y, layer), 0);
+	float4 input2 = Input.SampleLevel(samplerInput, float3(i.y, uv.y, layer), 0);
+
+	float res1x = w.x * input2.x - w.y * input2.y;
+	float res1y = w.y * input2.x + w.x * input2.y;
+	float res2x = w.x * input2.z - w.y * input2.w;
+	float res2y = w.y * input2.z + w.x * input2.w;
+	return input1 + float4(res1x, res1y, res2x, res2y);
+}
+
+[numthreads(8, 8, 1)]
+void FFTX(uint3 id : SV_DispatchThreadID)
+{
+	float2 uv = 1.0f*id.x / FFT_SIZE;
+
+	float4 data = ButterFly.SampleLevel(samplerButterFly, float2(uv.x, _pass), 0);
+	float2 i = data.xy;
+	float2 w = data.zw;
+
+	Output[id] = fft2X(id.z, i, w, uv.xy);
+}
+
+float4 fft2Y(int layer, float2 i, float2 w, float2 uv)
+{
+	float4 input1 = Input.SampleLevel(samplerInput, float3(uv.x, i.x, layer), 0);
+	float4 input2 = Input.SampleLevel(samplerInput, float3(uv.x, i.y, layer), 0);
+
+	float res1x = w.x * input2.x - w.y * input2.y;
+	float res1y = w.y * input2.x + w.x * input2.y;
+	float res2x = w.x * input2.z - w.y * input2.w;
+	float res2y = w.y * input2.z + w.x * input2.w;
+	return input2 + float4(res1x, res1y, res2x, res2y);
+}
+
+[numthreads(8, 8, 1)]
+void FFTY(uint3 id : SV_DispatchThreadID)
+{
+	float2 uv = 1.0f*id.x / FFT_SIZE;
+	float4 data = ButterFly.SampleLevel(samplerButterFly, float2(uv.y, _pass), 0);
+	float2 i = data.xy;
+	float2 w = data.zw;
+
+	Output[id] = fft2Y(id.z, i, w, uv);
+}
+
+float2 getSlopeVariances(float2 k, float A, float B, float C, float2 spectrumSample) {
+	float w = 1.0f - exp(A * k.x * k.x + B * k.x * k.y + C * k.y * k.y);
+	float2 kw = k * w;
+	return kw * kw * dot(spectrumSample, spectrumSample) * 2.0f;
+}
+
+
+[numthreads(1, 1, 1)]
+void Variance(uint3 id : SV_DispatchThreadID)
+{
+	const float SCALE = 10.0f;
+	float a = id.x;
+	float b = id.y;
+
+	float A = pow(1.0f*a / (N_SLOPE_VARIANCE - 1.0f), 4.0f) * SCALE;
+	float C = pow(1.0f*id.z / (N_SLOPE_VARIANCE - 1.0f), 4.0f) * SCALE;
+	float B = (2.0f*b / (N_SLOPE_VARIANCE - 1.0f) - 1.0f) * sqrt(A * C);
+	
+	A = -0.5*A;
+	B = -B;
+	C = -0.5*C;
+	
+	float2 slopeVariances = float2(slopeVarianceDelta, slopeVarianceDelta);
+	for (int y = 0; y < FFT_SIZE; y++) {
+		for (int x = 0; x < FFT_SIZE; x++) {
+			int i = x >= FFT_SIZE / 2 ? x - FFT_SIZE : x;
+			int j = y >= FFT_SIZE / 2 ? y - FFT_SIZE : y;
+			float2 k = 2.0 * PI * float2(i, j);
+
+			float4 spectrum12 = Input[uint3(x, y, 0)];
+			float4 spectrum34 = Input[uint3(x, y, 1)];
+
+			slopeVariances += getSlopeVariances(k / GRID_SIZE.x, A, B, C, spectrum12.xy);
+			slopeVariances += getSlopeVariances(k / GRID_SIZE.y, A, B, C, spectrum12.zw);
+			slopeVariances += getSlopeVariances(k / GRID_SIZE.z, A, B, C, spectrum34.xy);
+			slopeVariances += getSlopeVariances(k / GRID_SIZE.w, A, B, C, spectrum34.zw);
+		}
+	}
+
+	SlopeVariance[id] = slopeVariances.xxxy;
+}

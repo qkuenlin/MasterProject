@@ -1,0 +1,97 @@
+fileFormatVersion: 2
+guid: 4637283d29eb26642803f90f28848373
+ScriptedImporter:
+  fileIDToRecycleName:
+    100000: pebbly_ground/pebbly_ground
+    400000: pebbly_ground/pebbly_ground/Transform
+    2100000: mat.Pebbly Ground
+    2300000: pebbly_ground/pebbly_ground/MeshRenderer
+    2800000: Pebbly Ground_Base Color
+    2800002: Pebbly Ground_Normal
+    2800004: Pebbly Ground_Metallic
+    2800006: Pebbly Ground_Height
+    2800008: Pebbly Ground_Ambient Occlusion
+    3300000: pebbly_ground/pebbly_ground/MeshFilter
+    11400000: sbsar
+    11400002: graph0
+    13500000: pebbly_ground/pebbly_ground/SphereCollider
+    100100000: pebbly_ground
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 232528478, guid: b954f3890f55cb14dba21eeeb19a7462, type: 3}
+  mGraphInstanceData:
+  - graphLabel: Pebbly Ground
+    graphDescIndex: 0
+    generateAllOutputs: 0
+    generateMipMaps: 1
+    preset: " <sbspreset pkgurl=\"pkg://pebbly_ground\" label=\"\" >\n  <presetinput
+      identifier=\"$outputsize\" uid=\"2385203383\" type=\"8\" value=\"11,11\" />\n
+      </sbspreset>\n"
+    shaderName: Standard
+    outputNames: Base Color,Normal,Metallic,Height,Ambient Occlusion
+    texturePackingList:
+    - outputName: Diffuse
+      alphaSource: Diffuse
+    - outputName: Base Color
+      alphaSource: Base Color
+    - outputName: Normal
+      alphaSource: Normal
+    - outputName: Specular
+      alphaSource: Specular
+    - outputName: Glossiness
+      alphaSource: Glossiness
+    - outputName: Roughness
+      alphaSource: Roughness
+    - outputName: Metallic
+      alphaSource: Smoothness
+    - outputName: Height
+      alphaSource: Height
+    - outputName: Ambient Occlusion
+      alphaSource: Ambient Occlusion
+    colorSpaceList:
+    - outputName: Diffuse
+      bLinear: 0
+    - outputName: Base Color
+      bLinear: 0
+    - outputName: Normal
+      bLinear: 1
+    - outputName: Specular
+      bLinear: 0
+    - outputName: Glossiness
+      bLinear: 1
+    - outputName: Roughness
+      bLinear: 1
+    - outputName: Metallic
+      bLinear: 1
+    - outputName: Height
+      bLinear: 1
+    - outputName: Ambient Occlusion
+      bLinear: 1
+    inputTextureMap: []
+    targetSettingList:
+    - label: Default
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 2048
+      textureHeight: 2048
+      textureFormat: 0
+      loadBehavior: 0
+    - label: Standalone
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 256
+      textureHeight: 256
+      textureFormat: 0
+      loadBehavior: 0
+    - label: iPhone
+      bOverride: 0
+      bLockRatio: 1
+      bHighQuality: 0
+      textureWidth: 256
+      textureHeight: 256
+      textureFormat: 0
+      loadBehavior: 0
