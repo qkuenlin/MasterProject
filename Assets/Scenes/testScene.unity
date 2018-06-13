@@ -903,7 +903,6 @@ GameObject:
   - component: {fileID: 1278719802}
   - component: {fileID: 1278719801}
   - component: {fileID: 1278719800}
-  - component: {fileID: 1278719804}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -943,7 +942,7 @@ Camera:
     height: 1
   near clip plane: 0.5
   far clip plane: 3000
-  field of view: 60
+  field of view: 55.32518
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -974,95 +973,6 @@ Transform:
   m_Father: {fileID: 443444190}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1278719804
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1278719799}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e8be3d3990e0d84abf98d731b27538f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  axes: 0
-  sensitivityX: 15
-  sensitivityY: 15
-  minimumX: -360
-  maximumX: 360
-  minimumY: -60
-  maximumY: 60
---- !u!1 &1695728297
-GameObject:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
-  m_Component:
-  - component: {fileID: 1695728300}
-  - component: {fileID: 1695728299}
-  - component: {fileID: 1695728298}
-  m_Layer: 0
-  m_Name: Terrain
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4294967294
-  m_IsActive: 1
---- !u!154 &1695728298
-TerrainCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1695728297}
-  m_Material: {fileID: 0}
-  m_Enabled: 1
-  m_TerrainData: {fileID: 15600000, guid: 697666a70cafcfc4fa335c6db0541767, type: 2}
-  m_EnableTreeColliders: 1
---- !u!218 &1695728299
-Terrain:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1695728297}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_TerrainData: {fileID: 15600000, guid: 697666a70cafcfc4fa335c6db0541767, type: 2}
-  m_TreeDistance: 2000
-  m_TreeBillboardDistance: 50
-  m_TreeCrossFadeLength: 5
-  m_TreeMaximumFullLODCount: 50
-  m_DetailObjectDistance: 80
-  m_DetailObjectDensity: 1
-  m_HeightmapPixelError: 5
-  m_SplatMapDistance: 1000
-  m_HeightmapMaximumLOD: 0
-  m_CastShadows: 1
-  m_DrawHeightmap: 1
-  m_DrawTreesAndFoliage: 1
-  m_ReflectionProbeUsage: 1
-  m_MaterialType: 0
-  m_LegacySpecular:
-    serializedVersion: 2
-    rgba: 4286545791
-  m_LegacyShininess: 0.078125
-  m_MaterialTemplate: {fileID: 0}
-  m_BakeLightProbesForTrees: 1
-  m_ScaleInLightmap: 0.0512
-  m_LightmapParameters: {fileID: 15203, guid: 0000000000000000f000000000000000, type: 0}
---- !u!4 &1695728300
-Transform:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1695728297}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 13
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1740361050
 Transform:
   m_ObjectHideFlags: 0
@@ -1087,15 +997,15 @@ Prefab:
     m_Modifications:
     - target: {fileID: 400020, guid: 91b2e4f1afbd50f40a7e806714464e35, type: 2}
       propertyPath: m_LocalPosition.x
-      value: 104
+      value: -545.1
       objectReference: {fileID: 0}
     - target: {fileID: 400020, guid: 91b2e4f1afbd50f40a7e806714464e35, type: 2}
       propertyPath: m_LocalPosition.y
-      value: 407
+      value: 413.3
       objectReference: {fileID: 0}
     - target: {fileID: 400020, guid: 91b2e4f1afbd50f40a7e806714464e35, type: 2}
       propertyPath: m_LocalPosition.z
-      value: 3267
+      value: 3079
       objectReference: {fileID: 0}
     - target: {fileID: 400020, guid: 91b2e4f1afbd50f40a7e806714464e35, type: 2}
       propertyPath: m_LocalRotation.x
@@ -1431,6 +1341,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2064939522}
   - component: {fileID: 2064939521}
+  - component: {fileID: 2064939523}
   m_Layer: 0
   m_Name: MaterialManager
   m_TagString: Untagged
@@ -1453,10 +1364,10 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 75ab66e5d34c81346a9431c0048efa0d, type: 2}
   - {fileID: 2100000, guid: 55740804ca9dd964d87cb8061f9e974e, type: 2}
   LiveUpdate: 0
-  EnableNoiseUV: 1
+  EnableNoiseUV: 0
   NoiseUVScale: 100
   NoiseUVStrength: 0.001
-  EnableNoiseHue: 1
+  EnableNoiseHue: 0
   NoiseHueScale: 13
   NoiseHueStrength: 0.05
   EnableNoiseLum: 0
@@ -1483,7 +1394,7 @@ MonoBehaviour:
   RockNormalDetails: {fileID: 2800000, guid: a7d4c9bac4fe0ed489caff3f389ba42b, type: 3}
   RockHeightDetails: {fileID: 2800000, guid: 080c254d28a992e4bb86429a5db39ff9, type: 3}
   RockDetailUVMultiply: 1222.5
-  RockLargeUVMultiply: 70
+  RockLargeUVMultiply: 219
   RockDetailStrength: 1
   RockHeightStrength: 2
   RockHeightOffset: -0.7
@@ -1491,17 +1402,15 @@ MonoBehaviour:
   SnowNormaDetailStrength: 1
   SnowRoughnessModifier: 0
   SnowRoughnessModifierStrength: 0
-  SnowColorLarge: {fileID: 2800000, guid: 6041f030226583a4d8bfe05237965cbe, type: 3}
   SnowRoughnessLarge: {fileID: 2800000, guid: 4b6d1785d64344f4b8e40a2694126c4b, type: 3}
   SnowNormalLarge: {fileID: 2800000, guid: 705e3093c37e7134495e313354d9aaa8, type: 3}
   SnowHeightLarge: {fileID: 2800000, guid: 69083a11ee327ae448efdc1e8f300ddf, type: 3}
-  SnowColorDetails: {fileID: 2800000, guid: ed419759c7a8d8b49b8b56b5d8619efe, type: 3}
   SnowRoughnessDetails: {fileID: 2800000, guid: 4f90fdda25166ef4e91a8dbf3744d61c,
     type: 3}
   SnowNormalDetails: {fileID: 2800000, guid: f4d8b6a6d4ca0414ca993c3c98376b9a, type: 3}
   SnowHeightDetails: {fileID: 2800000, guid: 745024cac7fa63e468a79494cc7b9934, type: 3}
   SnowDetailUVMultiply: 207
-  SnowLargeUVMultiply: 7
+  SnowLargeUVMultiply: 79
   SnowDetailStrength: 1
   SnowHeightStrength: 2
   SnowHeightOffset: 1
@@ -1512,20 +1421,18 @@ MonoBehaviour:
   GravelColorLarge: {fileID: 2800000, guid: 9b80d23fd8486344c93556e4d75bcd54, type: 3}
   GravelRoughnessLarge: {fileID: 2800000, guid: 9dedf49429d2fcc4691463c751e93f8f,
     type: 3}
-  GravelNormalLarge: {fileID: 2800000, guid: e8a376d67cb00b942a7bdda12c64d18d, type: 3}
+  GravelNormalLarge: {fileID: 0}
   GravelHeightLarge: {fileID: 2800000, guid: 7fcdcbd5b7476984e9aef28761f65160, type: 3}
-  GravelColorDetails: {fileID: 2800000, guid: f6bb5effd7dab69479948c475191ef54, type: 3}
-  GravelRoughnessDetails: {fileID: 2800000, guid: 23b95946bf74edd44834f1cffe4874e6,
+  GravelColorDetails: {fileID: 2800000, guid: 9b80d23fd8486344c93556e4d75bcd54, type: 3}
+  GravelRoughnessDetails: {fileID: 2800000, guid: 9dedf49429d2fcc4691463c751e93f8f,
     type: 3}
-  GravelNormalDetails: {fileID: 2800000, guid: a42df9055cddd504bbd374e8cddf846f, type: 3}
-  GravelHeightDetails: {fileID: 2800000, guid: 084af1617696bd34e91ab00c8a4e4951, type: 3}
-  GravelDetailUVMultiply: 219
+  GravelNormalDetails: {fileID: 2800000, guid: e8a376d67cb00b942a7bdda12c64d18d, type: 3}
+  GravelHeightDetails: {fileID: 2800000, guid: 7fcdcbd5b7476984e9aef28761f65160, type: 3}
+  GravelDetailUVMultiply: 1222.5
   GravelLargeUVMultiply: 1222.5
   GravelDetailStrength: 1
-  GravelLargeHeightStrength: 0.25
-  GravelDetailHeightStrength: 1.82
-  GravelLargeHeightOffset: 0
-  GravelDetailHeightOffset: -0.88
+  GravelHeightStrength: 0.25
+  GravelHeightOffset: 0
   DirtNormaLargeStrength: 1
   DirtNormaDetailStrength: 1
   DirtRoughnessModifier: 0
@@ -1534,38 +1441,41 @@ MonoBehaviour:
   DirtRoughnessLarge: {fileID: 2800000, guid: 9216aa0f70469184bbaac3b40200a2c5, type: 3}
   DirtNormalLarge: {fileID: 2800000, guid: 95f8be933928f624dac3d94c81e39925, type: 3}
   DirtHeightLarge: {fileID: 2800000, guid: 83b0d8a6d9d41ef4687cf216c4766fe5, type: 3}
-  DirtColorDetails: {fileID: 2800000, guid: f6bb5effd7dab69479948c475191ef54, type: 3}
-  DirtRoughnessDetails: {fileID: 2800000, guid: 23b95946bf74edd44834f1cffe4874e6,
+  DirtColorDetails: {fileID: 2800000, guid: 5234aa8639791964790271c695f55953, type: 3}
+  DirtRoughnessDetails: {fileID: 2800000, guid: 9216aa0f70469184bbaac3b40200a2c5,
     type: 3}
-  DirtNormalDetails: {fileID: 2800000, guid: a42df9055cddd504bbd374e8cddf846f, type: 3}
-  DirtHeightDetails: {fileID: 2800000, guid: 084af1617696bd34e91ab00c8a4e4951, type: 3}
+  DirtNormalDetails: {fileID: 0}
+  DirtHeightDetails: {fileID: 2800000, guid: 83b0d8a6d9d41ef4687cf216c4766fe5, type: 3}
   DirtDetailUVMultiply: 219
   DirtLargeUVMultiply: 611.25
   DirtDetailStrength: 1
-  DirtLargeHeightStrength: 0.25
-  DirtDetailHeightStrength: 1.82
-  DirtLargeHeightOffset: 0
-  DirtDetailHeightOffset: -0.88
+  DirtHeightStrength: 0.25
+  DirtHeightOffset: 0
   GrassNormaLargeStrength: 1
   GrassNormaDetailStrength: 1
   GrassRoughnessModifier: 0
   GrassRoughnessModifierStrength: 0
   GrassColorLarge: {fileID: 2800000, guid: 6bc2bc37b38311841a2cf831b8369edf, type: 3}
   GrassRoughnessLarge: {fileID: 2800000, guid: 6796f61208795d04da44a638762e53cd, type: 3}
-  GrassNormalLarge: {fileID: 2800000, guid: 605bb12efc6445646a3dc3e14d535ea7, type: 3}
+  GrassNormalLarge: {fileID: 0}
   GrassHeightLarge: {fileID: 2800000, guid: 36ea5cc5916ddb844bc51aebdf3abfa0, type: 3}
-  GrassColorDetails: {fileID: 2800000, guid: f6bb5effd7dab69479948c475191ef54, type: 3}
-  GrassRoughnessDetails: {fileID: 2800000, guid: 23b95946bf74edd44834f1cffe4874e6,
+  GrassColorDetails: {fileID: 2800000, guid: 6bc2bc37b38311841a2cf831b8369edf, type: 3}
+  GrassRoughnessDetails: {fileID: 2800000, guid: 6796f61208795d04da44a638762e53cd,
     type: 3}
-  GrassNormalDetails: {fileID: 2800000, guid: a42df9055cddd504bbd374e8cddf846f, type: 3}
-  GrassHeightDetails: {fileID: 2800000, guid: 084af1617696bd34e91ab00c8a4e4951, type: 3}
+  GrassNormalDetails: {fileID: 2800000, guid: 605bb12efc6445646a3dc3e14d535ea7, type: 3}
+  GrassHeightDetails: {fileID: 2800000, guid: 36ea5cc5916ddb844bc51aebdf3abfa0, type: 3}
   GrassDetailUVMultiply: 219
   GrassLargeUVMultiply: 1222.5
   GrassDetailStrength: 1
-  GrassLargeHeightStrength: 0.28
-  GrassDetailHeightStrength: 1.82
-  GrassLargeHeightOffset: 0
-  GrassDetailHeightOffset: -0.88
+  GrassHeightStrength: 0.25
+  GrassHeightOffset: 0
+  CommonNormaDetailStrength: 1
+  CommonNormalDetails: {fileID: 2800000, guid: a42df9055cddd504bbd374e8cddf846f, type: 3}
+  CommonHeightDetails: {fileID: 2800000, guid: 084af1617696bd34e91ab00c8a4e4951, type: 3}
+  CommonDetailUVMultiply: 407.5
+  CommonDetailStrength: 1
+  CommonDetailHeightStrength: 1.82
+  CommonDetailHeightOffset: -0.88
 --- !u!4 &2064939522
 Transform:
   m_ObjectHideFlags: 0
@@ -1573,12 +1483,44 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 2064939520}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -190.30591, y: 37.533447, z: 3015.1426}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 14
+  m_Father: {fileID: 443444190}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!215 &2064939523
+ReflectionProbe:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2064939520}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Type: 0
+  m_Mode: 1
+  m_RefreshMode: 1
+  m_TimeSlicingMode: 0
+  m_Resolution: 512
+  m_UpdateFrequency: 0
+  m_BoxSize: {x: 2000, y: 2000, z: 2000}
+  m_BoxOffset: {x: 0, y: 0, z: 0}
+  m_NearClip: 1
+  m_FarClip: 2000
+  m_ShadowDistance: 100
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IntensityMultiplier: 1
+  m_BlendDistance: 1
+  m_HDR: 1
+  m_BoxProjection: 0
+  m_RenderDynamicObjects: 0
+  m_UseOcclusionCulling: 1
+  m_Importance: 1
+  m_CustomBakedTexture: {fileID: 0}
 --- !u!1001 &2117796500
 Prefab:
   m_ObjectHideFlags: 0

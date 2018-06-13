@@ -91,15 +91,11 @@ public class MaterialManager : MonoBehaviour
     [SerializeField]
     public float SnowRoughnessModifierStrength;
     [SerializeField]
-    public Texture2D SnowColorLarge;
-    [SerializeField]
     public Texture2D SnowRoughnessLarge;
     [SerializeField]
     public Texture2D SnowNormalLarge;
     [SerializeField]
     public Texture2D SnowHeightLarge;
-    [SerializeField]
-    public Texture2D SnowColorDetails;
     [SerializeField]
     public Texture2D SnowRoughnessDetails;
     [SerializeField]
@@ -148,13 +144,9 @@ public class MaterialManager : MonoBehaviour
     [SerializeField]
     public float GravelDetailStrength;
     [SerializeField]
-    public float GravelLargeHeightStrength;
+    public float GravelHeightStrength;
     [SerializeField]
-    public float GravelDetailHeightStrength;
-    [SerializeField]
-    public float GravelLargeHeightOffset;
-    [SerializeField]
-    public float GravelDetailHeightOffset;
+    public float GravelHeightOffset;
 
     [SerializeField]
     public float DirtNormaLargeStrength;
@@ -187,13 +179,9 @@ public class MaterialManager : MonoBehaviour
     [SerializeField]
     public float DirtDetailStrength;
     [SerializeField]
-    public float DirtLargeHeightStrength;
+    public float DirtHeightStrength;
     [SerializeField]
-    public float DirtDetailHeightStrength;
-    [SerializeField]
-    public float DirtLargeHeightOffset;
-    [SerializeField]
-    public float DirtDetailHeightOffset;
+    public float DirtHeightOffset;
 
     [SerializeField]
     public float GrassNormaLargeStrength;
@@ -226,31 +214,51 @@ public class MaterialManager : MonoBehaviour
     [SerializeField]
     public float GrassDetailStrength;
     [SerializeField]
-    public float GrassLargeHeightStrength;
+    public float GrassHeightStrength;
     [SerializeField]
-    public float GrassDetailHeightStrength;
+    public float GrassHeightOffset;
+
+
     [SerializeField]
-    public float GrassLargeHeightOffset;
+    public float CommonNormaDetailStrength;
     [SerializeField]
-    public float GrassDetailHeightOffset;
+    public Texture2D CommonNormalDetails;
+    [SerializeField]
+    public Texture2D CommonHeightDetails;
+    [SerializeField]
+    public float CommonDetailUVMultiply;
+    [SerializeField]
+    public float CommonDetailStrength;
+    [SerializeField]
+    public float CommonDetailHeightStrength;
+    [SerializeField]
+    public float CommonDetailHeightOffset;
 
     private Texture2DArray Textures;
 
+    private Texture reflectionCubeMap;
 
     private Color[] Noise0;
     private Color[] Noise1;
+    private int N_NOISE = 2;
 
     private Texture2DArray HeightTextures;
     private bool _first;
     // Use this for initialization
     void Start()
     {
-        Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 5 * 4, TextureFormat.ARGB32, true);
-        HeightTextures = new Texture2DArray(SnowColorDetails.width, SnowColorDetails.height, 5 * 2 + 2, TextureFormat.RGBAFloat, true);
-        CreateNoise(SnowColorDetails.height);
+        Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 18, TextureFormat.ARGB32, true);
+        HeightTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 5 * 2 + 1 + N_NOISE, TextureFormat.RGBAFloat, true);
+       // reflectionCubeMap = new Cubemap(128, TextureFormat.RGB24, true);        
+
+        foreach (Material m in materials)
+        {
+            m.SetInt("_N_NOISE", N_NOISE);
+        }
 
         _first = true;
         StartCoroutine("TextureUpdate");
+        StartCoroutine("RenderReflection");
     }
 
     void CreateNoise(int size)
@@ -339,129 +347,126 @@ public class MaterialManager : MonoBehaviour
         {
             if (LiveUpdate || _first)
             {
-                CreateNoise(SnowColorDetails.height);
-
+                CreateNoise(RockColorDetails.height);
 
                 _first = false;
-                Textures.SetPixels(RockColorLarge.GetPixels(), 0);
+                if(RockColorLarge != null) Textures.SetPixels(RockColorLarge.GetPixels(), 0);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(RockColorDetails.GetPixels(), 1);
+                if (RockColorDetails != null) Textures.SetPixels(RockColorDetails.GetPixels(), 1);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(RockRoughnessLarge.GetPixels(), 2);
+                if (RockRoughnessLarge != null) Textures.SetPixels(RockRoughnessLarge.GetPixels(), 2);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(RockRoughnessDetails.GetPixels(), 3);
+                if (RockRoughnessDetails != null) Textures.SetPixels(RockRoughnessDetails.GetPixels(), 3);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(SnowColorLarge.GetPixels(), 4 + 0);
+                if (SnowRoughnessLarge != null) Textures.SetPixels(SnowRoughnessLarge.GetPixels(), 4);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(SnowColorDetails.GetPixels(), 4 + 1);
+                if (SnowRoughnessDetails != null) Textures.SetPixels(SnowRoughnessDetails.GetPixels(), 4+1);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(SnowRoughnessLarge.GetPixels(), 4 + 2);
+                if (GravelColorLarge != null) Textures.SetPixels(GravelColorLarge.GetPixels(), 6 + 0);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(SnowRoughnessDetails.GetPixels(), 4 + 3);
+                if (GravelColorDetails != null) Textures.SetPixels(GravelColorDetails.GetPixels(), 6 + 1);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(GravelColorLarge.GetPixels(), 8 + 0);
+                if (GravelRoughnessLarge != null) Textures.SetPixels(GravelRoughnessLarge.GetPixels(), 6 + 2);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(GravelColorDetails.GetPixels(), 8 + 1);
+                if (GravelRoughnessDetails != null) Textures.SetPixels(GravelRoughnessDetails.GetPixels(), 6 + 3);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(GravelRoughnessLarge.GetPixels(), 8 + 2);
+                if (DirtColorLarge != null) Textures.SetPixels(DirtColorLarge.GetPixels(), 10 + 0);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(GravelRoughnessDetails.GetPixels(), 8 + 3);
+                if (DirtColorDetails != null) Textures.SetPixels(DirtColorDetails.GetPixels(), 10 + 1);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(DirtColorLarge.GetPixels(), 12 + 0);
+                if (DirtRoughnessLarge != null) Textures.SetPixels(DirtRoughnessLarge.GetPixels(), 10 + 2);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(DirtColorDetails.GetPixels(), 12 + 1);
+                if (DirtRoughnessDetails != null) Textures.SetPixels(DirtRoughnessDetails.GetPixels(), 10 + 3);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(DirtRoughnessLarge.GetPixels(), 12 + 2);
+                if (GrassColorLarge != null) Textures.SetPixels(GrassColorLarge.GetPixels(), 14 + 0);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(DirtRoughnessDetails.GetPixels(), 12 + 3);
+                if (GrassColorDetails != null) Textures.SetPixels(GrassColorDetails.GetPixels(), 14 + 1);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(GrassColorLarge.GetPixels(), 16 + 0);
+                if (GrassRoughnessLarge != null) Textures.SetPixels(GrassRoughnessLarge.GetPixels(), 14 + 2);
                 yield return new WaitForSeconds(0.05f);
 
-                Textures.SetPixels(GrassColorDetails.GetPixels(), 16 + 1);
-                yield return new WaitForSeconds(0.05f);
-
-                Textures.SetPixels(GrassRoughnessLarge.GetPixels(), 16 + 2);
-                yield return new WaitForSeconds(0.05f);
-
-                Textures.SetPixels(GrassRoughnessDetails.GetPixels(), 16 + 3);
+                if (GrassRoughnessDetails != null) Textures.SetPixels(GrassRoughnessDetails.GetPixels(), 14 + 3);
                 yield return new WaitForSeconds(0.05f);
                 Textures.Apply();
 
-
-                HeightTextures.SetPixels(RockHeightLarge.GetPixels(), 0 + 1);
+                if (RockHeightLarge != null) HeightTextures.SetPixels(RockHeightLarge.GetPixels(), 0 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(RockHeightDetails.GetPixels(), 1 + 1);
+                if (RockHeightDetails != null) HeightTextures.SetPixels(RockHeightDetails.GetPixels(), 1 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(SnowHeightLarge.GetPixels(), 2 + 1);
+                if (SnowHeightLarge != null) HeightTextures.SetPixels(SnowHeightLarge.GetPixels(), 2 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(SnowHeightDetails.GetPixels(), 3 + 1);
+                if (SnowHeightDetails != null) HeightTextures.SetPixels(SnowHeightDetails.GetPixels(), 3 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(GravelHeightLarge.GetPixels(), 4 + 1);
+                if (GravelHeightLarge != null) HeightTextures.SetPixels(GravelHeightLarge.GetPixels(), 4 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(GravelHeightDetails.GetPixels(), 5 + 1);
+                if (GravelHeightDetails != null) HeightTextures.SetPixels(GravelHeightDetails.GetPixels(), 5 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(DirtHeightLarge.GetPixels(), 6 + 1);
+                if (DirtHeightLarge != null) HeightTextures.SetPixels(DirtHeightLarge.GetPixels(), 6 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(DirtHeightDetails.GetPixels(), 7 + 1);
+                if (DirtHeightDetails != null) HeightTextures.SetPixels(DirtHeightDetails.GetPixels(), 7 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(GrassHeightLarge.GetPixels(), 8 + 1);
+                if (GrassHeightLarge != null) HeightTextures.SetPixels(GrassHeightLarge.GetPixels(), 8 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(GrassHeightDetails.GetPixels(), 9 + 1);
+                if (GrassHeightDetails != null) HeightTextures.SetPixels(GrassHeightDetails.GetPixels(), 9 + N_NOISE);
+                yield return new WaitForSeconds(0.05f);
+
+                if (CommonHeightDetails != null) HeightTextures.SetPixels(CommonHeightDetails.GetPixels(), 10 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
                 HeightTextures.SetPixels(Noise0, 0);
-                HeightTextures.SetPixels(Noise1, 11);
+                HeightTextures.SetPixels(Noise1, 1);
 
                 HeightTextures.Apply();
 
                 foreach (Material m in materials)
                 {
-                    m.SetTexture("_RockNormalDetail", RockNormalDetails);
-                    m.SetTexture("_RockNormalLarge", RockNormalLarge);
+                    if (RockNormalDetails != null) m.SetTexture("_RockNormalDetail", RockNormalDetails);
+                    if (RockNormalLarge != null) m.SetTexture("_RockNormalLarge", RockNormalLarge);
                     m.SetTexture("_Textures", Textures);
                     yield return new WaitForSeconds(0.05f);
 
-                    m.SetTexture("_SnowNormalDetail", SnowNormalDetails);
-                    m.SetTexture("_SnowNormalLarge", SnowNormalLarge);
+                    if (SnowNormalDetails != null) m.SetTexture("_SnowNormalDetail", SnowNormalDetails);
+                    if (SnowNormalLarge != null) m.SetTexture("_SnowNormalLarge", SnowNormalLarge);
                     yield return new WaitForSeconds(0.05f);
 
-                    m.SetTexture("_GravelNormalDetail", GravelNormalDetails);
-                    m.SetTexture("_GravelNormalLarge", GravelNormalLarge);
+                    if (GravelNormalDetails != null) m.SetTexture("_GravelNormalDetail", GravelNormalDetails);
+                    if (GravelNormalLarge != null) m.SetTexture("_GravelNormalLarge", GravelNormalLarge);
                     yield return new WaitForSeconds(0.05f);
 
-                    m.SetTexture("_DirtNormalDetail", DirtNormalDetails);
-                    m.SetTexture("_DirtNormalLarge", DirtNormalLarge);
+                    if (DirtNormalDetails != null) m.SetTexture("_DirtNormalDetail", DirtNormalDetails);
+                    if (DirtNormalLarge != null) m.SetTexture("_DirtNormalLarge", DirtNormalLarge);
                     yield return new WaitForSeconds(0.05f);
 
-                    m.SetTexture("_GrassNormalDetail", GrassNormalDetails);
-                    m.SetTexture("_GrassNormalLarge", GrassNormalLarge);
+                    if (GrassNormalDetails != null) m.SetTexture("_GrassNormalDetail", GrassNormalDetails);
+                    if (GrassNormalLarge != null) m.SetTexture("_GrassNormalLarge", GrassNormalLarge);
                     yield return new WaitForSeconds(0.05f);
+
+                    if (CommonNormalDetails != null) m.SetTexture("_CommonNormalDetail", CommonNormalDetails);
 
                     m.SetTexture("_HeightTextures", HeightTextures);
                     yield return new WaitForSeconds(0.05f);
@@ -475,6 +480,17 @@ public class MaterialManager : MonoBehaviour
         }
     }
 
+    IEnumerator RenderReflection()
+    {
+        reflectionCubeMap = GetComponent<ReflectionProbe>().bakedTexture;
+
+        foreach (Material m in materials)
+        {
+            m.SetTexture("_ReflectionCubeMap", reflectionCubeMap);
+        }
+
+        yield return new WaitForSeconds(0.5f);    
+    }
 
     // Update is called once per frame
     void Update()
@@ -535,10 +551,8 @@ public class MaterialManager : MonoBehaviour
             m.SetFloat("_GravelRoughnessModifierStrength", GravelRoughnessModifierStrength);
             m.SetFloat("_GravelDetailStrength", GravelDetailStrength);
 
-            m.SetFloat("_GravelHeightDetailStrength", GravelDetailHeightStrength);
-            m.SetFloat("_GravelHeightLargeStrength", GravelLargeHeightStrength);
-            m.SetFloat("_GravelHeightDetailOffset", GravelDetailHeightOffset);
-            m.SetFloat("_GravelHeightLargeOffset", GravelLargeHeightOffset);
+            m.SetFloat("_GravelHeightStrength", GravelHeightStrength);
+            m.SetFloat("_GravelHeightOffset", GravelHeightOffset);
 
             m.SetFloat("_DirtUVDetailMultiply", DirtDetailUVMultiply);
             m.SetFloat("_DirtUVLargeMultiply", DirtLargeUVMultiply);
@@ -550,10 +564,8 @@ public class MaterialManager : MonoBehaviour
             m.SetFloat("_DirtRoughnessModifierStrength", DirtRoughnessModifierStrength);
             m.SetFloat("_DirtDetailStrength", DirtDetailStrength);
 
-            m.SetFloat("_DirtHeightDetailStrength", DirtDetailHeightStrength);
-            m.SetFloat("_DirtHeightLargeStrength", DirtLargeHeightStrength);
-            m.SetFloat("_DirtHeightDetailOffset", DirtDetailHeightOffset);
-            m.SetFloat("_DirtHeightLargeOffset", DirtLargeHeightOffset);
+            m.SetFloat("_DirtHeightStrength", DirtDetailStrength);
+            m.SetFloat("_DirtHeightOffset", DirtHeightOffset);
 
             m.SetFloat("_GrassUVDetailMultiply", GrassDetailUVMultiply);
             m.SetFloat("_GrassUVLargeMultiply", GrassLargeUVMultiply);
@@ -565,10 +577,14 @@ public class MaterialManager : MonoBehaviour
             m.SetFloat("_GrassRoughnessModifierStrength", GrassRoughnessModifierStrength);
             m.SetFloat("_GrassDetailStrength", GrassDetailStrength);
 
-            m.SetFloat("_GrassHeightDetailStrength", GrassDetailHeightStrength);
-            m.SetFloat("_GrassHeightLargeStrength", GrassLargeHeightStrength);
-            m.SetFloat("_GrassHeightDetailOffset", GrassDetailHeightOffset);
-            m.SetFloat("_GrassHeightLargeOffset", GrassLargeHeightOffset);
+            m.SetFloat("_GrassHeightStrength", GrassHeightStrength);
+            m.SetFloat("_GrassHeightOffset", GrassHeightOffset);
+
+            m.SetFloat("_CommonUVDetailMultiply", CommonDetailUVMultiply);
+            m.SetFloat("_CommonNormalDetailStrength", CommonNormaDetailStrength);            
+            m.SetFloat("_CommonDetailStrength", CommonDetailStrength);
+            m.SetFloat("_CommonHeightDetailStrength", CommonDetailHeightStrength);
+            m.SetFloat("_CommonHeightDetailOffset", CommonDetailHeightOffset);
         }
     }
 }

@@ -235,6 +235,51 @@ public class MaterialManagerEditor : Editor
                 EditorGUI.indentLevel--;
             }
 
+            // Detail Textures
+            EditorGUILayout.LabelField("Common Rock Details", style);
+            {
+                EditorGUI.indentLevel++;
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Details Strength");
+                myScript.CommonDetailStrength = EditorGUILayout.Slider(myScript.CommonDetailStrength, 0.0f, 1.0f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("UV Multiplier");
+                myScript.CommonDetailUVMultiply = EditorGUILayout.FloatField(myScript.CommonDetailUVMultiply);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Height");
+                myScript.CommonHeightDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.CommonHeightDetails, typeof(Texture2D), false);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel++;
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Strength");
+                myScript.CommonDetailHeightStrength = EditorGUILayout.Slider(myScript.CommonDetailHeightStrength, 0.0f, 2.0f);
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Offset");
+                myScript.CommonDetailHeightOffset = EditorGUILayout.Slider(myScript.CommonDetailHeightOffset, -1.0f, 1.0f);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel--;
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Normal");
+                myScript.CommonNormalDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.CommonNormalDetails, typeof(Texture2D), false);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel++;
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Strength");
+                myScript.CommonNormaDetailStrength = EditorGUILayout.Slider(myScript.CommonNormaDetailStrength, 0.0f, 1.0f);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel--;
+
+
+                EditorGUI.indentLevel--;
+            }
+
             EditorGUI.indentLevel--;
         }
 
@@ -252,11 +297,6 @@ public class MaterialManagerEditor : Editor
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("UV Multiplier");
                 myScript.SnowLargeUVMultiply = EditorGUILayout.FloatField(myScript.SnowLargeUVMultiply);
-                GUILayout.EndHorizontal();
-
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Albedo");
-                myScript.SnowColorLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.SnowColorLarge, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
@@ -296,11 +336,6 @@ public class MaterialManagerEditor : Editor
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("UV Multiplier");
                 myScript.SnowDetailUVMultiply = EditorGUILayout.FloatField(myScript.SnowDetailUVMultiply);
-                GUILayout.EndHorizontal();
-
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Albedo");
-                myScript.SnowColorDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.SnowColorDetails, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
@@ -393,16 +428,6 @@ public class MaterialManagerEditor : Editor
                 EditorGUILayout.LabelField("Height");
                 myScript.GravelHeightLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.GravelHeightLarge, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
-                EditorGUI.indentLevel++;
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Strength");
-                myScript.GravelLargeHeightStrength = EditorGUILayout.Slider(myScript.GravelLargeHeightStrength, 0.0f, 2.0f);
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Offset");
-                myScript.GravelLargeHeightOffset = EditorGUILayout.Slider(myScript.GravelLargeHeightOffset, -1.0f, 1.0f);
-                GUILayout.EndHorizontal();
-                EditorGUI.indentLevel--;
 
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Normal");
@@ -447,16 +472,6 @@ public class MaterialManagerEditor : Editor
                 EditorGUILayout.LabelField("Height");
                 myScript.GravelHeightDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.GravelHeightDetails, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
-                EditorGUI.indentLevel++;
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Strength");
-                myScript.GravelDetailHeightStrength = EditorGUILayout.Slider(myScript.GravelDetailHeightStrength, 0.0f, 2.0f);
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Offset");
-                myScript.GravelDetailHeightOffset = EditorGUILayout.Slider(myScript.GravelDetailHeightOffset, -1.0f, 1.0f);
-                GUILayout.EndHorizontal();
-                EditorGUI.indentLevel--;
 
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Normal");
@@ -484,6 +499,21 @@ public class MaterialManagerEditor : Editor
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Strength");
                 myScript.GravelRoughnessModifierStrength = EditorGUILayout.Slider(myScript.GravelRoughnessModifierStrength, 0.0f, 1.0f);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.LabelField("Height Control", style);
+            {
+                EditorGUI.indentLevel++;
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Strength");
+                myScript.GravelHeightStrength = EditorGUILayout.Slider(myScript.GravelHeightStrength, 0.0f, 2.0f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Offset");
+                myScript.GravelHeightOffset = EditorGUILayout.Slider(myScript.GravelHeightOffset, -1.0f, 1.0f);
                 GUILayout.EndHorizontal();
                 EditorGUI.indentLevel--;
             }
@@ -523,16 +553,6 @@ public class MaterialManagerEditor : Editor
                 EditorGUILayout.LabelField("Height");
                 myScript.DirtHeightLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.DirtHeightLarge, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
-                EditorGUI.indentLevel++;
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Strength");
-                myScript.DirtLargeHeightStrength = EditorGUILayout.Slider(myScript.DirtLargeHeightStrength, 0.0f, 2.0f);
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Offset");
-                myScript.DirtLargeHeightOffset = EditorGUILayout.Slider(myScript.DirtLargeHeightOffset, -1.0f, 1.0f);
-                GUILayout.EndHorizontal();
-                EditorGUI.indentLevel--;
 
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Normal");
@@ -577,16 +597,6 @@ public class MaterialManagerEditor : Editor
                 EditorGUILayout.LabelField("Height");
                 myScript.DirtHeightDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.DirtHeightDetails, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
-                EditorGUI.indentLevel++;
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Strength");
-                myScript.DirtDetailHeightStrength = EditorGUILayout.Slider(myScript.DirtDetailHeightStrength, 0.0f, 2.0f);
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Offset");
-                myScript.DirtDetailHeightOffset = EditorGUILayout.Slider(myScript.DirtDetailHeightOffset, -1.0f, 1.0f);
-                GUILayout.EndHorizontal();
-                EditorGUI.indentLevel--;
 
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Normal");
@@ -614,6 +624,21 @@ public class MaterialManagerEditor : Editor
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Strength");
                 myScript.DirtRoughnessModifierStrength = EditorGUILayout.Slider(myScript.DirtRoughnessModifierStrength, 0.0f, 1.0f);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.LabelField("Height Control", style);
+            {
+                EditorGUI.indentLevel++;
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Strength");
+                myScript.DirtHeightStrength = EditorGUILayout.Slider(myScript.DirtHeightStrength, 0.0f, 2.0f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Offset");
+                myScript.DirtHeightOffset = EditorGUILayout.Slider(myScript.DirtHeightOffset, -1.0f, 1.0f);
                 GUILayout.EndHorizontal();
                 EditorGUI.indentLevel--;
             }
@@ -653,16 +678,6 @@ public class MaterialManagerEditor : Editor
                 EditorGUILayout.LabelField("Height");
                 myScript.GrassHeightLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.GrassHeightLarge, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
-                EditorGUI.indentLevel++;
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Strength");
-                myScript.GrassLargeHeightStrength = EditorGUILayout.Slider(myScript.GrassLargeHeightStrength, 0.0f, 2.0f);
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Offset");
-                myScript.GrassLargeHeightOffset = EditorGUILayout.Slider(myScript.GrassLargeHeightOffset, -1.0f, 1.0f);
-                GUILayout.EndHorizontal();
-                EditorGUI.indentLevel--;
 
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Normal");
@@ -707,16 +722,6 @@ public class MaterialManagerEditor : Editor
                 EditorGUILayout.LabelField("Height");
                 myScript.GrassHeightDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.GrassHeightDetails, typeof(Texture2D), false);
                 GUILayout.EndHorizontal();
-                EditorGUI.indentLevel++;
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Strength");
-                myScript.GrassDetailHeightStrength = EditorGUILayout.Slider(myScript.GrassDetailHeightStrength, 0.0f, 2.0f);
-                GUILayout.EndHorizontal();
-                GUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Offset");
-                myScript.GrassDetailHeightOffset = EditorGUILayout.Slider(myScript.GrassDetailHeightOffset, -1.0f, 1.0f);
-                GUILayout.EndHorizontal();
-                EditorGUI.indentLevel--;
 
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Normal");
@@ -744,6 +749,21 @@ public class MaterialManagerEditor : Editor
                 GUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Strength");
                 myScript.GrassRoughnessModifierStrength = EditorGUILayout.Slider(myScript.GrassRoughnessModifierStrength, 0.0f, 1.0f);
+                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.LabelField("Height Control", style);
+            {
+                EditorGUI.indentLevel++;
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Strength");
+                myScript.GrassHeightStrength = EditorGUILayout.Slider(myScript.GrassHeightStrength, 0.0f, 2.0f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Offset");
+                myScript.GrassHeightOffset = EditorGUILayout.Slider(myScript.GrassHeightOffset, -1.0f, 1.0f);
                 GUILayout.EndHorizontal();
                 EditorGUI.indentLevel--;
             }
