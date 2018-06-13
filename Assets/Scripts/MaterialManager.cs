@@ -236,7 +236,9 @@ public class MaterialManager : MonoBehaviour
 
     private Texture2DArray Textures;
 
-    private Color[] Noise;
+
+    private Color[] Noise0;
+    private Color[] Noise1;
 
     private Texture2DArray HeightTextures;
     private bool _first;
@@ -244,7 +246,7 @@ public class MaterialManager : MonoBehaviour
     void Start()
     {
         Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 5 * 4, TextureFormat.ARGB32, true);
-        HeightTextures = new Texture2DArray(SnowColorDetails.width, SnowColorDetails.height, 5 * 2 + 1, TextureFormat.RGBAFloat, true);
+        HeightTextures = new Texture2DArray(SnowColorDetails.width, SnowColorDetails.height, 5 * 2 + 2, TextureFormat.RGBAFloat, true);
         CreateNoise(SnowColorDetails.height);
 
         _first = true;
@@ -256,8 +258,9 @@ public class MaterialManager : MonoBehaviour
         Vector4 offsetX = new Vector4(Random.value, Random.value, Random.value, Random.value);
         Vector4 offsetY = new Vector4(Random.value, Random.value, Random.value, Random.value);
 
+        Noise0 = new Color[size * size];
+        Noise1 = new Color[size * size];
 
-        Noise = new Color[size * size];
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
@@ -279,7 +282,53 @@ public class MaterialManager : MonoBehaviour
                 xCoord = (offsetX.z + (1.0f * x) / (1.0f * size)) * NoiseLumScale;
                 yCoord = (offsetY.z + (1.0f * y) / (1.0f * size)) * NoiseLumScale;
                 float sampleW = (Mathf.PerlinNoise(xCoord, yCoord)+0.5f);
-                Noise[y * size + x] = new Color(sampleX, sampleY, sampleZ, sampleW);
+
+                Noise0[y * size + x] = new Color(sampleX, sampleY, sampleZ, sampleW);
+
+                float Weight0 = 1.0f;
+                float Weight1 = 1.0f;
+                float Weight2 = 1.0f;
+                float Weight3 = 1.0f;
+
+                float Frequency = 20.0f;
+                float Lacunarity = 2.0f;
+                float Gain = 1.0f;
+                float sample0 = 0;
+                float sample1 = 0;
+                float sample2 = 0;
+                float sample3 = 0;
+
+                for (int i=0; i<8; i++)
+                {
+                    xCoord = (offsetX.x + (1.0f * x) / (1.0f * size)) * Frequency;
+                    yCoord = (offsetY.x + (1.0f * y) / (1.0f * size)) * Frequency;
+                    float tmp = Weight0 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
+                    Weight0 = tmp * Gain;
+                    sample0 += tmp;
+
+                    xCoord = (offsetX.y + (1.0f * x) / (1.0f * size)) * Frequency;
+                    yCoord = (offsetY.y + (1.0f * y) / (1.0f * size)) * Frequency;
+                    tmp = Weight1 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
+                    Weight1 = tmp * Gain;
+                    sample1 += tmp;
+
+                    xCoord = (offsetX.z + (1.0f * x) / (1.0f * size)) * Frequency;
+                    yCoord = (offsetY.z + (1.0f * y) / (1.0f * size)) * Frequency;
+                    tmp = Weight2 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
+                    Weight2 = tmp * Gain;
+                    sample2 += tmp;
+
+                    xCoord = (offsetX.w + (1.0f * x) / (1.0f * size)) * Frequency;
+                    yCoord = (offsetY.w + (1.0f * y) / (1.0f * size)) * Frequency;
+                    tmp = Weight3 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
+                    Weight3 = tmp * Gain;
+                    sample3 += tmp;
+
+                    Frequency *= Lacunarity;
+                }
+
+                Noise1[y * size + x] = new Color(sample0, sample1, sample2, sample3);
+
             }
         }
     }
@@ -386,7 +435,9 @@ public class MaterialManager : MonoBehaviour
                 HeightTextures.SetPixels(GrassHeightDetails.GetPixels(), 9 + 1);
                 yield return new WaitForSeconds(0.05f);
 
-                HeightTextures.SetPixels(Noise, 0);
+                HeightTextures.SetPixels(Noise0, 0);
+                HeightTextures.SetPixels(Noise1, 11);
+
                 HeightTextures.Apply();
 
                 foreach (Material m in materials)
