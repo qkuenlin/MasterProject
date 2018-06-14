@@ -27,17 +27,9 @@ ScriptedImporter:
     generateMipMaps: 1
     preset: " <sbspreset pkgurl=\"pkg://New_Graph\" label=\"\" >\n  <presetinput identifier=\"diffuse_opacity\"
       uid=\"784018146\" type=\"0\" value=\"0\" />\n </sbspreset>\n"
-    shaderName: Standard (Roughness setup)
+    shaderName: Custom/customTerrainShader_hlsl
     outputNames: 
-    texturePackingList:
-    - outputName: Base Color
-      alphaSource: Base Color
-    - outputName: Normal
-      alphaSource: Normal
-    - outputName: Roughness
-      alphaSource: Roughness
-    - outputName: Height
-      alphaSource: Height
+    texturePackingList: []
     colorSpaceList:
     - outputName: Base Color
       bLinear: 0

@@ -25,7 +25,7 @@ public class MaterialManagerEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        //DrawDefaultInspector();
+       // DrawDefaultInspector();
 
         MaterialManager myScript = (MaterialManager)target;
 

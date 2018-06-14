@@ -27,11 +27,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ClassesDGR:
-        m_Texture: {fileID: 2800000, guid: 1b485daacd8fe5a47b09221bb178750c, type: 3}
+        m_Texture: {fileID: 2800000, guid: d249f41ce443dbc44826f958953179df, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ClassesWSGT:
-        m_Texture: {fileID: 2800000, guid: 45a57ed132cfe244eb73e9b1ab7c33e7, type: 3}
+        m_Texture: {fileID: 2800000, guid: 375c861ab63a0e34487df267e5a118bd, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -138,7 +138,7 @@ Material:
     - _Proportion: 0
     - _RockNormalStrength: 0
     - _RockRoughness: 1
-    - _RockRoughnessModifier: 0
+    - _RockRoughnessModifier: 1
     - _RockRoughnessModifierStrength: 1
     - _Slice: 0
     - _SmoothnessTextureChannel: 0

@@ -971,7 +971,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 443444190}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1740361050
 Transform:
@@ -1037,7 +1037,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400050, guid: 91b2e4f1afbd50f40a7e806714464e35, type: 2}
       propertyPath: m_RootOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5400000, guid: 91b2e4f1afbd50f40a7e806714464e35, type: 2}
       propertyPath: m_UseGravity
@@ -1379,7 +1379,7 @@ MonoBehaviour:
   HeightBasedMix: 1
   AmbientLightColor: {r: 0.7311321, g: 0.93253005, b: 1, a: 0}
   AmbientLightStrength: 0.4
-  SatelliteProportion: 0.4
+  SatelliteProportion: 0
   RockNormaLargeStrength: 1
   RockNormaDetailStrength: 1
   RockRoughnessModifier: 1
@@ -1418,16 +1418,16 @@ MonoBehaviour:
   GravelNormaDetailStrength: 1
   GravelRoughnessModifier: 0
   GravelRoughnessModifierStrength: 0
-  GravelColorLarge: {fileID: 2800000, guid: 9b80d23fd8486344c93556e4d75bcd54, type: 3}
-  GravelRoughnessLarge: {fileID: 2800000, guid: 9dedf49429d2fcc4691463c751e93f8f,
+  GravelColorLarge: {fileID: 2800000, guid: 650de60392173e24788aa7d1ce8d841a, type: 3}
+  GravelRoughnessLarge: {fileID: 2800000, guid: 9560e1945b3435740a8858ec1dcd8e79,
     type: 3}
   GravelNormalLarge: {fileID: 0}
-  GravelHeightLarge: {fileID: 2800000, guid: 7fcdcbd5b7476984e9aef28761f65160, type: 3}
-  GravelColorDetails: {fileID: 2800000, guid: 9b80d23fd8486344c93556e4d75bcd54, type: 3}
-  GravelRoughnessDetails: {fileID: 2800000, guid: 9dedf49429d2fcc4691463c751e93f8f,
+  GravelHeightLarge: {fileID: 2800000, guid: 690cc7237ffaaf84b97ac66cd228504e, type: 3}
+  GravelColorDetails: {fileID: 2800000, guid: 650de60392173e24788aa7d1ce8d841a, type: 3}
+  GravelRoughnessDetails: {fileID: 2800000, guid: 9560e1945b3435740a8858ec1dcd8e79,
     type: 3}
-  GravelNormalDetails: {fileID: 2800000, guid: e8a376d67cb00b942a7bdda12c64d18d, type: 3}
-  GravelHeightDetails: {fileID: 2800000, guid: 7fcdcbd5b7476984e9aef28761f65160, type: 3}
+  GravelNormalDetails: {fileID: 2800000, guid: ef05d26f53a83b24b944c531ff5c36a0, type: 3}
+  GravelHeightDetails: {fileID: 2800000, guid: 690cc7237ffaaf84b97ac66cd228504e, type: 3}
   GravelDetailUVMultiply: 1222.5
   GravelLargeUVMultiply: 1222.5
   GravelDetailStrength: 1

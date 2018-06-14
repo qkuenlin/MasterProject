@@ -503,15 +503,15 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float3 hslm2 = RGB2HSL(mc2);
 
 				float4 c = float4(HSL2RGB(hsl2 + (hsl1 - hslm2)), 1.0);
-				*/
+				
 				float3 lab1 = RGB2LAB(c1);
 				float3 lab2 = RGB2LAB(c2);
 				float3 labm2 = RGB2LAB(mc2);
 
 				float4 c = float4(LAB2RGB(lab2 + (lab1 - labm2)), 1.0);
-
-				//float4 c = c2 + (c1 - mc2);
-
+				*/
+				float4 c = c2 + (c1 - mc2);
+				
 				return lerp(c1, c, strength);
 			}
 
@@ -697,21 +697,22 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float detailStrength = _enableDetails ? lerp(0, _GravelDetailStrength, LOD) : 0;
 
 				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 6)));
+				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVLargeMultiply, 6), 8));
+
 				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 6 + 2)).x;
 
-				float4 albedoD = float4(0, 0, 0, 0);
-				float4 albedoDM = float4(0, 0, 0, 0);
+				float4 albedo = ColorTransfer(satellite, albedoL, albedoLM, 1 - _SatelliteProportion);
 
 				float roughnessD = 1.0;
 
 				if (detailStrength > 0) {
-					albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVDetailMultiply, 6 + 1)));
-					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVDetailMultiply, 6 + 1), 4));
+					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVDetailMultiply, 6 + 1)));
+					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVDetailMultiply, 6 + 1), 8));
 
 					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVDetailMultiply, 6 + 3)).x;
+					albedo = ColorTransfer(albedo, albedoD, albedoDM, (1 - _SatelliteProportion)*(detailStrength));
 				}
 
-				float4 albedo = ColorTransfer(albedoL, albedoD, albedoDM, detailStrength);
 
 				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
 
@@ -734,7 +735,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
 				roughness = lerp(roughness, 0.1, wetratio);
 
-				albedo = ColorTransfer(satellite, albedo, 1- _SatelliteProportion);
 				albedo *= lerp(1.0, 0.6, wetratio);
 
 				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
@@ -743,8 +743,12 @@ Shader "Custom/customTerrainShader_hlsl" {
 			float4 Dirt(v2f input, float weight, float wetness, float height) {
 				float detailStrength = _enableDetails ? lerp(0, _DirtDetailStrength, LOD) : 0;
 
-				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVLargeMultiply, 10)));
-				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVLargeMultiply, 10 + 2)).x;
+				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVLargeMultiply, 10.0)));
+				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVLargeMultiply, 10.0), 8));
+
+				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVLargeMultiply, 10.0 +2)).x;
+
+				float4 albedo = ColorTransfer(satellite, albedoL, albedoLM, 1 - _SatelliteProportion);
 
 				float4 albedoD = float4(0, 0, 0, 0);
 				float4 albedoDM = float4(0, 0, 0, 0);
@@ -752,13 +756,14 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float roughnessD = 1.0;
 
 				if (detailStrength > 0) {
-					albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 1)));
-					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 1), 4));
+					albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVDetailMultiply, 10.0+1)));
+					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVDetailMultiply, 10.0+1), 8));
 
-					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 3)).x;
+					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVDetailMultiply, 10.0+3)).x;
+					albedo = ColorTransfer(albedo, albedoD, albedoDM, (1 - _SatelliteProportion)*(detailStrength));
+
 				}
 
-				float4 albedo = ColorTransfer(albedoL, albedoD, albedoDM, detailStrength);
 
 				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
 
@@ -781,7 +786,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
 				roughness = lerp(roughness, 0.1, wetratio);
 
-				albedo = ColorTransfer(satellite, albedo, 1- _SatelliteProportion);
 				albedo *= lerp(1.0, 0.6, wetratio);
 
 				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
@@ -792,7 +796,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float commonDetailStrength = _enableDetails ? lerp(0, _CommonDetailStrength, LOD) : 0;
 
 				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVLargeMultiply, 0.0)));
-				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVLargeMultiply, 0.0), 8));
+				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVLargeMultiply, 0.0), 9));
 
 				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVLargeMultiply, 2.0)).x;
 
@@ -805,12 +809,13 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				if (detailStrength > 0) {
 					albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVDetailMultiply, 1.0)));
-					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVDetailMultiply, 1.0), 8));
+					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVDetailMultiply, 1.0), 9));
 
 					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVDetailMultiply, 3.0)).x;
+
+					albedo = ColorTransfer(albedo, albedoD, albedoDM, (1 - _SatelliteProportion)*(detailStrength));
 				}
 
-				albedo = ColorTransfer(albedo, albedoD, albedoDM, (1 - _SatelliteProportion)*(detailStrength));
 
 				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
 
@@ -846,7 +851,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
 				roughness = lerp(roughness, 0.1, wetratio);
 
-
 				albedo *= lerp(1.0, 0.6, wetratio);
 
 				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
@@ -865,7 +869,11 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float detailStrength = _enableDetails ? lerp(0, _GrassDetailStrength, LOD) : 0;
 
 				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVLargeMultiply, 14)));
-				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVLargeMultiply, 14+2)).x;
+				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVLargeMultiply, 14), 9));
+
+				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVLargeMultiply, 14 + 2)).x;
+
+				float4 albedo = ColorTransfer(satellite, albedoL, albedoLM, 1 - _SatelliteProportion);
 
 				float4 albedoD = float4(0, 0, 0, 0);
 				float4 albedoDM = float4(0, 0, 0, 0);
@@ -873,13 +881,14 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float roughnessD = 1.0;
 
 				if (detailStrength > 0) {
-					albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVDetailMultiply, 14+1)));
-					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1), 4));
+					albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1)));
+					albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1), 9));
 
-					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVDetailMultiply, 14+3)).x;
+					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 3)).x;
+					albedo = ColorTransfer(albedo, albedoD, albedoDM, (1 - _SatelliteProportion)*(detailStrength));
+
 				}
 
-				float4 albedo = ColorTransfer(albedoL, albedoD, detailStrength);
 
 				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
 
@@ -902,7 +911,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
 				roughness = lerp(roughness, 0.1, wetratio);
 
-				albedo = ColorTransfer(satellite, albedo, 1- _SatelliteProportion);
 				albedo *= lerp(1.0, 0.6, wetratio);
 
 				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
@@ -918,8 +926,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 				if (detailStrength > 0) {
 					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_SnowUVDetailMultiply, 3.0)).x;
 				}
-				float4 albedo = float4(1, 1, 1, 1);
-				albedo = ColorTransfer(satellite, albedo, 1-_SatelliteProportion);
+				float4 albedo = satellite;//float4(1, 1, 1, 1);
 
 				float4 roughness = (roughnessL + roughnessD * detailStrength);
 
