@@ -7,8 +7,6 @@ using UnityEditor;
 public class MaterialManagerEditor : Editor
 {
     [SerializeField]
-    private bool _AmbientFoldout = true;
-    [SerializeField]
     private bool _RockFoldout = true;
     [SerializeField]
     private bool _SnowFoldout = true;
@@ -22,10 +20,12 @@ public class MaterialManagerEditor : Editor
     private bool _GlobalFoldout = true;
     [SerializeField]
     private bool _NoiseFoldout = true;
+    [SerializeField]
+    private bool _LODFoldout = true;
 
     public override void OnInspectorGUI()
     {
-       // DrawDefaultInspector();
+        //DrawDefaultInspector();
 
         MaterialManager myScript = (MaterialManager)target;
 
@@ -55,17 +55,38 @@ public class MaterialManagerEditor : Editor
             EditorGUI.indentLevel--;
         }
 
-        // AMBIENT LIGHT OPTIONS
-        _AmbientFoldout = EditorGUILayout.Foldout(_AmbientFoldout, "Ambient Light", "Foldout");
-        if(_AmbientFoldout)
+        // LOD OPTIONS
+        _LODFoldout = EditorGUILayout.Foldout(_LODFoldout, "Level Of Details", "Foldout");
+        if(_LODFoldout)
         {
             EditorGUI.indentLevel++;
-
-            myScript.AmbientLightColor = EditorGUILayout.ColorField("Color", myScript.AmbientLightColor);
             GUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Strength");
-            myScript.AmbientLightStrength = EditorGUILayout.FloatField(myScript.AmbientLightStrength);
+            EditorGUILayout.LabelField("LOD Distance 0 [m] (Details Full)");
+            myScript.lodDistance0 = EditorGUILayout.FloatField(myScript.lodDistance0);
             GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("LOD Distance 1 [m] (Detail Textures)");
+            myScript.lodDistance1 = EditorGUILayout.FloatField(myScript.lodDistance1);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("LOD Distance 2 [m] (Height/Alpha Blend)");
+            myScript.lodDistance2 = EditorGUILayout.FloatField(myScript.lodDistance2);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("LOD Distance 3 [m] (Large Texture)");
+            myScript.lodDistance3 = EditorGUILayout.FloatField(myScript.lodDistance3);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("LOD Distance 4 [m] (Basic Rendering)");
+            myScript.lodDistance4 = EditorGUILayout.FloatField(myScript.lodDistance4);
+            GUILayout.EndHorizontal();
+
+            myScript.lodDebug = EditorGUILayout.Toggle("See LODs (Debug)", myScript.lodDebug);
+
 
             EditorGUI.indentLevel--;
         }
@@ -120,6 +141,28 @@ public class MaterialManagerEditor : Editor
         if(_RockFoldout)
         {
             EditorGUI.indentLevel++;
+
+            EditorGUILayout.LabelField("Slope Modifier", style);
+            {
+                EditorGUI.indentLevel++;
+                myScript.SlopeModifierEnabled = EditorGUILayout.Toggle("Enable Slope Modifier", myScript.SlopeModifierEnabled);
+                if (myScript.SlopeModifierEnabled)
+                {
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Slope Threshold");
+                    myScript.SlopeModifierThreshold = EditorGUILayout.Slider(myScript.SlopeModifierThreshold, 0.0f, 1.0f);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Modifier Stength");
+                    myScript.SlopeModifierStrength = EditorGUILayout.Slider(myScript.SlopeModifierStrength, 0.0f, 10.0f);
+                    GUILayout.EndHorizontal();
+
+                    myScript.SlopeModifierDebug = EditorGUILayout.Toggle("Debug View", myScript.SlopeModifierDebug);
+                }
+                EditorGUI.indentLevel--;
+
+            }
 
             // Large Textures
             EditorGUILayout.LabelField("Large Textures", style);

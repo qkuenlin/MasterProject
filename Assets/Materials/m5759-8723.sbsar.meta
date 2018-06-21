@@ -27,7 +27,7 @@ ScriptedImporter:
     generateMipMaps: 1
     preset: " <sbspreset pkgurl=\"pkg://New_Graph\" label=\"\" >\n </sbspreset>\n"
     shaderName: Standard (Roughness setup)
-    outputNames: Base Color,Normal,Height
+    outputNames: 
     texturePackingList:
     - outputName: Base Color
       alphaSource: Base Color
@@ -47,12 +47,12 @@ ScriptedImporter:
     - outputName: Height
       bLinear: 1
     inputTextureMap:
-    - inputName: Satellite_Image
-      texturePath: Assets/Objects/Terrains/Schlegeisspeicher/tex_5759-8723.jpg
-      texture2D: {fileID: 2800000, guid: 88e1c16b86200a74d8aa3264a51a3cb4, type: 3}
     - inputName: Segmentation_Image
       texturePath: Assets/Objects/Terrains/Schlegeisspeicher/patchwork_5759-8723.png
       texture2D: {fileID: 2800000, guid: 0924c17ba01f806468c3ef6305ecdeba, type: 3}
+    - inputName: Satellite_Image
+      texturePath: Assets/Objects/Terrains/texture.jpg
+      texture2D: {fileID: 2800000, guid: e3dcd4c3efbb85f40af1efd272dedf5a, type: 3}
     targetSettingList:
     - label: Default
       bOverride: 0
