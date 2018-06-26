@@ -20,9 +20,9 @@ public class WaterManager : MonoBehaviour
     public float nyquistMin;
     public float nyquistMax;
     public Color waterColor;
+    public float waterRoughness;
 
     public float gridSize;
-    public float height;
     // public ComputeShader computeShader;
     public List<Material> terrainMaterials;
 
@@ -174,7 +174,15 @@ public class WaterManager : MonoBehaviour
 
         // textureInit.GenerateMips();
 
-        Vector4 lods = new Vector4(gridSize, Mathf.Atan(2.0f / height) * gridSize, Mathf.Log(lambdaMin) / Mathf.Log(2.0f), (nbWaves - 1.0f) / (Mathf.Log(lambdaMax) / Mathf.Log(2.0f) - Mathf.Log(lambdaMin) / Mathf.Log(2.0f)));
+        RaycastHit info;
+        Physics.Raycast(Camera.main.transform.position, new Vector3(0, -1, 0), out info, 5000);
+
+        Vector4 lods = new Vector4(gridSize, 
+                                    Mathf.Atan(2.0f/info.distance) * gridSize, 
+                                    Mathf.Log(lambdaMin) / Mathf.Log(2.0f), 
+                                    (nbWaves - 1.0f) / (Mathf.Log(lambdaMax) / Mathf.Log(2.0f) - Mathf.Log(lambdaMin) / Mathf.Log(2.0f)));
+
+        Debug.Log(lods);
 
         Matrix4x4 worldToWind = new Matrix4x4();
         worldToWind[0, 0] = Mathf.Cos(wavesDirection);
@@ -192,32 +200,23 @@ public class WaterManager : MonoBehaviour
 
         foreach (Material m in terrainMaterials)
         {
-            /*
-                public int nbWaves = 60;
-    public float wavesDirection = 0.0f;
-    public float waveDisperion = 1.0f;
-    public float lambdaMin = 0.02f;
-    public float lambdaMax = 30.0f;
-    public float v20 = 10.0f;
-    public float amplitude = 0.32f;
+            if (m != null)
+            {
+                m.SetColor("_WaterColor", waterColor);
+                m.SetFloat("_nyquistMin", nyquistMin);
+                m.SetFloat("_nyquistMax", nyquistMax);
+                m.SetFloat("_nbWaves", nbWaves);
+                m.SetVector("_sigmaSqTotal", sigmaSqTotal);
+                m.SetMatrix("_worldToWind", worldToWind);
+                m.SetMatrix("_windToWorld", windToWorld);
+                m.SetVector("_lods", lods);
+                m.SetTexture("_wavesSampler", wavesTexture);
 
-    public float nyquistMin = 1.0f;
-    public float nyquistMax = 1.5f;
-    public Color waterColor = new Color(0.039f, 0.156f, 0.47f, 0.098f);
-    */
+                m.SetFloat("_WaterRoughness", waterRoughness);
 
-            m.SetColor("_WaterColor", waterColor);
-            m.SetFloat("_nyquistMin", nyquistMin);
-            m.SetFloat("_nyquistMax", nyquistMax);
-            m.SetFloat("_nbWaves", nbWaves);
-            m.SetVector("_sigmaSqTotal", sigmaSqTotal);
-            m.SetMatrix("_worldToWind", worldToWind);
-            m.SetMatrix("_windToWorld", windToWorld);
-            m.SetVector("_lods", lods);
-            m.SetTexture("_wavesSampler", wavesTexture);
-
-            // m.SetMatrix("screenToCamera", Camera.current.projectionMatrix.inverse);
-            // m.SetMatrix("screenToCamera", Camera.current.worldToCameraMatrix.inverse);
+                // m.SetMatrix("screenToCamera", Camera.current.projectionMatrix.inverse);
+                // m.SetMatrix("screenToCamera", Camera.current.worldToCameraMatrix.inverse);
+            }
         }
 
     }

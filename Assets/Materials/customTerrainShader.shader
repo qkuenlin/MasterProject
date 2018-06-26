@@ -8,11 +8,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 	Properties{
 		_ClassesDGR("Segmentation Image Dirt/Gravel/Rock", 2D) = "white" {}
 		_ClassesWSGT("Segmentation Image Water/Snow/Grass/Trees", 2D) = "white" {}
-
 		_Sat("Satellite Image", 2D) = "white" {}
-
-		_WaterRoughness("Water Roughness", Range(0,1)) = 0.5
-		_WaterColor("Water Color", Color) = (0.26,0.19,0.16,1.0)
 	}
 	SubShader
 	{
@@ -27,6 +23,8 @@ Shader "Custom/customTerrainShader_hlsl" {
 			#include "Lighting.cginc"
 			#include "UnityStandardBRDF.cginc"
 			#include "UnityGlobalIllumination.cginc"
+			#include "UnityStandardConfig.cginc"
+
 
 			#pragma vertex vertex //vert
 			#pragma fragment frag
@@ -53,8 +51,8 @@ Shader "Custom/customTerrainShader_hlsl" {
 			float _nbWaves = 60;
 			sampler2D _wavesSampler;
 			float2 _sigmaSqTotal;
-			float2x2 _worldToWind;
-			float2x2 _windToWorld;
+			float4x4 _worldToWind;
+			float4x4 _windToWorld;
 			/* -------- */
 
 			fixed4 _AmbientLightColor;
@@ -264,23 +262,24 @@ Shader "Custom/customTerrainShader_hlsl" {
 					float3 cameraDir = normalize(mul(screenToCamera, v.vertex).xyz);
 					float3 worldDir = mul(cameraToWorld, float4(cameraDir, 0.0)).xyz;
 
-					float t = (v.vertex.y - _WorldSpaceCameraPos.y) / worldDir.y;
+					float t = (v.vertex.y - _WorldSpaceCameraPos.y);
 
-					o.lod = length(_WorldSpaceCameraPos - v.vertex.xyz)/worldDir.y * _lods.y; // size in meters of one grid cell, projected on the sea surface
+					o.lod = t * _lods.y;//length(_WorldSpaceCameraPos - o.worldSpacePosition.xyz); // size in meters of one grid cell, projected on the sea surface
 
-					o.u = 2445*o.uv;//mul(_worldToWind, _WorldSpaceCameraPos.xz + t * worldDir.xy);
+					o.u =  mul(_worldToWind, float4(v.vertex.xz , 0, 0) ).xy;//mul(_worldToWind, _WorldSpaceCameraPos.xz + t * worldDir.xy);
 
 					float3 dPdu = float3(1.0, 0.0, 0.0);
 					float3 dPdv = float3(0.0, 0.0, 1.0);
 					float2 sigmaSq = _sigmaSqTotal;
 
 					float3 dP = float3(0.0, 0.0, 0.0);
+
 					float iMin = max(0.0, floor((log2(_nyquistMin * o.lod) - _lods.z) * _lods.w));
 
 					for (float i = iMin; i < _nbWaves; i += 1.0f)
 					{
 						float4 wt = tex2Dlod(_wavesSampler, float4((i + 0.5) / _nbWaves, 0,0,0));
-						float phase = 10*wt.y * _Time.x - dot(wt.zw, o.u);
+						float phase = wt.y * _Time.x - dot(wt.zw, o.u);
 						float s = sin(phase);
 						float c = cos(phase);
 						float overk = 9.81f / (wt.y * wt.y);
@@ -301,7 +300,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 					o.P = v.vertex.xyz + dP.xyz;
 					
-					if (t > 0.0) {
+					if (tex2Dlod(_ClassesWSGT, float4(o.uv, 0, 1)).x > 0.5) {
 						o.pos = UnityObjectToClipPos(float4(o.P.x, o.P.y, o.P.z, 1.0));
 						o.worldSpacePosition = mul(unity_ObjectToWorld, float4(o.P.x, o.P.y, o.P.z, 1.0));
 					}					
@@ -915,8 +914,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 					}
 					else {
 						if (Depth < _LODDistance0) {
-							//albedo = lerp(float4(1,0,0,1), colorD, (Depth) / (_LODDistance0));
-
 							albedo = lerp(albedoD, colorD, (Depth) / (_LODDistance0));
 						}
 						else {
@@ -985,9 +982,9 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float iMin = max(0.0, floor((log2(_nyquistMin * input.lod / _lods.x) - _lods.z) * _lods.w));
 				
 				[unroll(100)]
-				for (float i = iMin; i <= iMAX; i += 1.0) {
-					float4 wt = tex2D(_wavesSampler, float2((i + 0.5f) / _nbWaves, 0));
-					float phase = wt.y *10* _Time.x - dot(wt.zw, input.u);
+				for (float i = iMin; i <=0* iMAX; i += 1.0) {
+					float4 wt = tex2Dlod(_wavesSampler, float4((i + 0.5f) / _nbWaves, 0, 0, 0));
+					float phase = wt.y * _Time.x - dot(wt.zw, input.u);
 					float s = sin(phase);
 					float c = cos(phase);
 					float overk = 9.81f / (wt.y * wt.y);
@@ -1014,13 +1011,11 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				float3 N = normalize(cross(dPdv, dPdu));
 
-				//N = normalize(N * float3(1, -1, -1));
-				
+				//N = normalize(N * float3(1, -1, -1));				
 				
 				if (dot(V, N) < 0.0) {
 					N = reflect(N, V); // reflects backfacing normals
-				}
-				
+				}			
 
 
 				//return float4(N, 1.0);
@@ -1030,7 +1025,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 				//return float4(N, 1.0);
 				float F = 0.02 + 0.98 * meanFresnel(V, N, sigmaSq);
 
-				float D = GGX(N, H, _WaterRoughness);
+				float D = GGX(N, H, 0.1);//_WaterRoughness);
 
 				fixed4 specular = _LightColor0 * D * F * Geom(N, H, V, L) / (4.0f*dot(V, N)*dot(N, L));
 				fixed4 diffuse = _WaterColor * dot(N, L) * _LightColor0;
@@ -1038,33 +1033,40 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				/* INDIRECT ILLUMINATION */
 
+			//	N = float3(0, 1, 0);
+
+				half mip = perceptualRoughnessToMipmapLevel(_WaterRoughness);
+
+				//return texCUBElod(unity_SpecCube0, float4(reflect(-V, N), mip));
+
+				float3 wo0 = reflect(-V, N);
+
+				return texCUBElod(_ReflectionCubeMap, float4(wo0, mip)) + specular;
+
 				float4 IndirectLight = float4(0, 0, 0, 0);
-				for (int i = 0; i < 9; i++) {
-					float3 wo = reflect(-V, Normal);
+				for (int i = 0; i < 1; i++) {
+					float3 wo = reflect(-V, N);
 					switch (i) {
 					case 0: break;
-					case 1: wo = reflect(-V, normalize(Normal + float3(_WaterRoughness, 0, 0))); break;
-					case 2: wo = reflect(-V, normalize(Normal + float3(-_WaterRoughness, 0, 0))); break;
-					case 3: wo = reflect(-V, normalize(Normal + float3(0, 0, _WaterRoughness))); break;
-					case 4: wo = reflect(-V, normalize(Normal + float3(0, 0, -_WaterRoughness))); break;
-					case 5: wo = reflect(-V, normalize(Normal + float3(_WaterRoughness / 2, 0, _WaterRoughness / 2))); break;
-					case 6: wo = reflect(-V, normalize(Normal + float3(_WaterRoughness / 2, 0, -_WaterRoughness / 2))); break;
-					case 7: wo = reflect(-V, normalize(Normal + float3(-_WaterRoughness / 2, 0, _WaterRoughness / 2))); break;
-					case 8: wo = reflect(-V, normalize(Normal + float3(-_WaterRoughness / 2, 0, -_WaterRoughness / 2))); break;
+					case 1: wo = reflect(-V, normalize(N + float3(_WaterRoughness, 0, 0))); break;
+					case 2: wo = reflect(-V, normalize(N + float3(-_WaterRoughness, 0, 0))); break;
+					case 3: wo = reflect(-V, normalize(N + float3(0, 0, _WaterRoughness))); break;
+					case 4: wo = reflect(-V, normalize(N + float3(0, 0, -_WaterRoughness))); break;
+					case 5: wo = reflect(-V, normalize(N + float3(_WaterRoughness / 2, 0, _WaterRoughness / 2))); break;
+					case 6: wo = reflect(-V, normalize(N + float3(_WaterRoughness / 2, 0, -_WaterRoughness / 2))); break;
+					case 7: wo = reflect(-V, normalize(N + float3(-_WaterRoughness / 2, 0, _WaterRoughness / 2))); break;
+					case 8: wo = reflect(-V, normalize(N + float3(-_WaterRoughness / 2, 0, -_WaterRoughness / 2))); break;
 					default: break;
 					}
 
-					IndirectLight += dot(wo, Normal) * texCUBElod(_ReflectionCubeMap, float4(wo, _WaterRoughness*_WaterRoughness * 7));
+					IndirectLight += dot(wo, N) * texCUBElod(_ReflectionCubeMap, float4(wo, 0));
 				}
 
-				IndirectLight /= 9.0;
+				IndirectLight /= 1.0;
 
-				float4 Indirect = lerp(_WaterColor*IndirectLight, IndirectLight, (1 - _WaterRoughness)*fresnel(dot(N, V), 1.33f));
+				float4 Indirect = IndirectLight;//lerp(_WaterColor*IndirectLight, IndirectLight, fresnel(dot(N, V), 1.33f));
 
-				float3 Ty = normalize(float3(0, N.z, -N.y));
-				float3 Tx = cross(Ty, N);
-
-				return /*reflectedSunRadiance(N, Tx, Ty, sigmaSq);*/_WaterRoughness * (diffuse) + specular + IndirectLight;
+				return specular + IndirectLight;
 			} 
 
 			float RockH(float weight) {
@@ -1180,7 +1182,10 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float delta = fwidth(minBary);
 				minBary = smoothstep(0, 1*delta, minBary);
 				*/
-				
+
+				//			float4 worldSpacePosition : TEXCOORD2;
+
+
 				float3 Tangent = normalize(input.tangent);
 				float3 Biangent = normalize(input.bitangent);
 
@@ -1191,232 +1196,237 @@ Shader "Custom/customTerrainShader_hlsl" {
 				H = normalize(V + L);
 				UV = input.uv;// +(0.1*Normal.xz);//*0.1f;
 
-				float4 satelliteD = tex2D(_Sat, input.uv);
-
-				blendSize = 0.15;
-
-				Depth = length(_WorldSpaceCameraPos - input.worldSpacePosition.xyz);
-
-				if (_LODDebug == 1) {
-					if (Depth < _LODDistance0) {
-						if (Depth >= _LODDistance0 * (1- blendSize)) return lerp(float4(1, 0, 0, 1), float4(0.5, 0.5, 0, 1), (Depth - _LODDistance0 * (1 - blendSize))/(_LODDistance0*blendSize));
-						else return float4(1, 0, 0, 1);
-					}
-					else if (Depth < _LODDistance1) {
-						if (Depth >= _LODDistance1 * (1 - blendSize)) return lerp(float4(0.5, 0.5, 0, 1), float4(0, 1, 0, 1), (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize));
-						else return float4(0.5, 0.5, 0, 1);
-					}
-					else if (Depth < _LODDistance2) {
-						if (Depth >= _LODDistance2 * (1 - blendSize)) return lerp(float4(0, 1, 0, 1), float4(0, 0.5, 0.5, 1), (Depth - _LODDistance2 * (1 - blendSize)) / (_LODDistance2*blendSize));
-						else return float4(0, 1, 0, 1);
-					}	
-					else if (Depth < _LODDistance3) {
-						if (Depth >= _LODDistance3 * (1 - blendSize)) return lerp(float4(0, 0.5, 0.5, 1), float4(0, 0, 1, 1), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
-						else return float4(0, 0.5, 0.5, 1);
-					}
-					else if (Depth < _LODDistance4) {
-						if (Depth >= _LODDistance4 * (1 - blendSize)) return lerp(float4(0, 0, 1, 1), float4(0, 0, 0, 1), (Depth - _LODDistance4 * (1-blendSize)) / (_LODDistance4*blendSize));
-						else return float4(0, 0, 1, 1);
-					}
-					else {
-						return float4(0, 0, 0, 0);
-					}
-				}
-
-				LOD = saturate((lerp(0, 1.0, 200.0 / Depth)));
-
-				DetailMaterialWeight = 1;//saturate((pow(LOD + 0.1, 2) - 0.15) / 0.85);
-
-				Noise = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 0)));
-
-				Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 11)));
-
 				satellite = tex2D(_Sat, input.uv);
 
-				float4 DGR = tex2D(_ClassesDGR, input.uv);// +float4(Noise_Classes.xy, 0, 0);
-				float4 WSGT = tex2D(_ClassesWSGT, input.uv);// +float4(0, 0, Noise_Classes.w, 0);
-
-				WSGT.a = (1.0 - WSGT.a);
-
-				DGR = saturate(sin(3.141592 * (DGR - 0.5))*0.55 + 0.5);
-				WSGT = saturate(sin(3.141592 * (WSGT - 0.5))*0.55 + 0.5);
-
-				if (_SlopeModifierEnabled == 1) {
-					float slopeRockModifier = saturate((-Normal.y + _SlopeModifierThreshold) * _SlopeModifierStrength);
-
-					if (_SlopeModifierDebug == 1) return slopeRockModifier;
-
-					DGR.z += slopeRockModifier;
-				}
-
-				float sum = DGR.x + DGR.y + DGR.z + WSGT.x + WSGT.y + WSGT.z + WSGT.w;
-				DGR /= sum;
-				WSGT /= sum;
-
-				float dx = ddx_fine(satellite);
-				float dy = ddy_fine(satellite);
 				float ns = 0.13;
 				if (_enableNormalMap) {
 					float3 n = Texture2Normal();
 					Normal = normalize(Normal + ns * float3(n.x, 0, n.y));
 				}
 
-				//return float4(Normal, 1);
-
 				tspace0 = float3(Tangent.x, Biangent.x, Normal.x);
 				tspace1 = float3(Tangent.y, Biangent.y, Normal.y);
 				tspace2 = float3(Tangent.z, Biangent.z, Normal.z);
-				
-				if (_enableNoise == 1) {
-					input.uv += _noiseStrength * Noise.xy;
-				}						
-						
-				/*
-				if (WSGT.r == 1) return float4(1, 0, 0, 1);
-				else if (WSGT.g == 1) return float4(0, 1, 0, 1);
-				else if (WSGT.b == 1) return float4(0, 0, 1, 1);
-				else if (WSGT.a == 1) return float4(1, 1, 1, 1);
 
-				else return float4(0, 0, 0, 0);
-				*/
-				float4 Color = float4(0, 0, 0, 1.0);
+				if (input.pos.x - _SatelliteProportion > 0) {
 
-				if (Depth < _LODDistance3) {
-					float wetness = pow(saturate(10.0*WSGT.y + 1.2*(WSGT.x > 0.5 ? 0 : WSGT.x)), 1.5);
+					blendSize = 0.15;
 
-					float4 ColorH = float4(0, 0, 0, 0);
-					float4 ColorB = float4 (0, 0, 0, 0);
+					Depth = length(_WorldSpaceCameraPos - input.worldSpacePosition.xyz);
 
-					if (Depth < _LODDistance2) {
-						float waterH = WSGT.x;
-						float snowH = 0;
-						float grassH = 0;
-						float treesH = 0;
-						float rockH = 0;
-						float dirtH = 0;
-						float gravelH = 0;
-						float commonH = 0;
-
-						//Snow
-						if (WSGT.y > 0)
-						{
-							snowH = SnowH(WSGT.y);
+					if (_LODDebug == 1) {
+						if (Depth < _LODDistance0) {
+							if (Depth >= _LODDistance0 * (1 - blendSize)) return lerp(float4(1, 0, 0, 1), float4(0.5, 0.5, 0, 1), (Depth - _LODDistance0 * (1 - blendSize)) / (_LODDistance0*blendSize));
+							else return float4(1, 0, 0, 1);
 						}
-						//Grass
-						if (WSGT.z > 0)
-						{
-							grassH = GrassH(WSGT.z);
+						else if (Depth < _LODDistance1) {
+							if (Depth >= _LODDistance1 * (1 - blendSize)) return lerp(float4(0.5, 0.5, 0, 1), float4(0, 1, 0, 1), (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize));
+							else return float4(0.5, 0.5, 0, 1);
 						}
-						//Trees
-						if (WSGT.a > 0)
-						{
-							treesH = 0;//HEIGHT(Trees, WSGT.y, 2);
+						else if (Depth < _LODDistance2) {
+							if (Depth >= _LODDistance2 * (1 - blendSize)) return lerp(float4(0, 1, 0, 1), float4(0, 0.5, 0.5, 1), (Depth - _LODDistance2 * (1 - blendSize)) / (_LODDistance2*blendSize));
+							else return float4(0, 1, 0, 1);
 						}
-						//Dirt
-						if (DGR.x > 0)
-						{
-							dirtH = DirtH(DGR.x);
+						else if (Depth < _LODDistance3) {
+							if (Depth >= _LODDistance3 * (1 - blendSize)) return lerp(float4(0, 0.5, 0.5, 1), float4(0, 0, 1, 1), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
+							else return float4(0, 0.5, 0.5, 1);
 						}
-						//Gravel
-						if (DGR.y > 0)
-						{
-							gravelH = GravelH(DGR.y);
+						else if (Depth < _LODDistance4) {
+							if (Depth >= _LODDistance4 * (1 - blendSize)) return lerp(float4(0, 0, 1, 1), float4(0, 0, 0, 1), (Depth - _LODDistance4 * (1 - blendSize)) / (_LODDistance4*blendSize));
+							else return float4(0, 0, 1, 1);
 						}
-						//Rock
-						if (DGR.z > 0)
-						{
-							rockH = RockH(DGR.z);//HEIGHT(_Rock, DGR.z, 0)
+						else {
+							return float4(0, 0, 0, 0);
 						}
-
-						if (DGR.y > 0 || DGR.x > 0 || WSGT.z > 0) {
-								commonH = CommonH(saturate(DGR.y + DGR.x + WSGT.z));
-						}
-
-
-						float maxH = max(rockH, max(gravelH, max(dirtH, max(treesH, max(grassH, max(snowH, commonH))))));
-						//return maxH;
-						if (maxH == treesH) ColorH = Trees(input, WSGT.a);
-						else if (maxH == snowH) ColorH = Snow(input, WSGT.y);
-						else if (maxH == gravelH) ColorH = Gravel(input, DGR.y, wetness, gravelH);
-						else if (maxH == grassH) ColorH = Grass(input, WSGT.z, wetness, grassH);
-						else if (maxH == dirtH) ColorH = Dirt(input, DGR.x, wetness, dirtH);
-						else if (maxH == rockH || maxH == commonH) ColorH = Rock(input, DGR.z, wetness, rockH, commonH);
-
-						if (waterH > maxH) ColorH = lerp(ColorH, Water(input), sqrt(saturate(waterH-0.5)/0.5));
 					}
 
-					if(Depth >= _LODDistance2 * (1 - blendSize)) {
-						float4 water = float4(0, 0, 0, 0);
-						float4 snow = float4(0, 0, 0, 0);
-						float4 grass = float4(0, 0, 0, 0);
-						float4 trees = float4(0, 0, 0, 0);
-						float4 dirt = float4(0, 0, 0, 0);
-						float4 gravel = float4(0, 0, 0, 0);
-						float4 rock = float4(0, 0, 0, 0);
+					LOD = saturate((lerp(0, 1.0, 200.0 / Depth)));
 
-						//Water
-						if (WSGT.x > 0)
-						{
-							water = Water(input);
-						}
-						//Snow
-						if (WSGT.y > 0)
-						{
-							snow = Snow(input, WSGT.y);
-						}
-						//Grass
-						if (WSGT.z > 0)
-						{
-							grass = Grass(input, WSGT.z, wetness, 0);
-						}
-						//Trees
-						if (WSGT.a > 0)
-						{
-							trees = Trees(input, WSGT.a);
-						}
-						//Dirt
-						if (DGR.x > 0)
-						{
-							dirt = Dirt(input, DGR.x, wetness, 0);
-						}
-						//Gravel
-						if (DGR.y > 0)
-						{
-							gravel = Gravel(input, DGR.y, wetness, 0);
-						}
-						//Rock
-						if (DGR.z > 0)
-						{
-							rock = Rock(input, DGR.z, wetness, 1, 0);
-						}
-											
+					DetailMaterialWeight = 1;//saturate((pow(LOD + 0.1, 2) - 0.15) / 0.85);
 
-						ColorB = float4(rock.rgb*DGR.z + gravel.rgb*DGR.y + dirt.rgb*DGR.x + trees.rgb*WSGT.w + grass.rgb*WSGT.z + snow.rgb*WSGT.y + water.rgb*WSGT.x, 1.0);
+					Noise = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 0)));
+
+					Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 11)));
+
+
+					float4 DGR = tex2D(_ClassesDGR, input.uv);// +float4(Noise_Classes.xy, 0, 0);
+					float4 WSGT = tex2D(_ClassesWSGT, input.uv);// +float4(0, 0, Noise_Classes.w, 0);
+
+					WSGT.a = (1.0 - WSGT.a);
+
+					DGR = saturate(sin(3.141592 * (DGR - 0.5))*0.55 + 0.5);
+					WSGT = saturate(sin(3.141592 * (WSGT - 0.5))*0.55 + 0.5);
+
+					if (_SlopeModifierEnabled == 1) {
+						float slopeRockModifier = saturate((-Normal.y + _SlopeModifierThreshold) * _SlopeModifierStrength);
+
+						if (_SlopeModifierDebug == 1) return slopeRockModifier;
+
+						DGR.z += slopeRockModifier;
 					}
 
-					if (Depth < _LODDistance2 && Depth >= _LODDistance2 * (1 - blendSize))
-						Color = lerp(ColorH, ColorB, (Depth - _LODDistance2 * (1 - blendSize)) / (_LODDistance2*blendSize));
-					else if (Depth < _LODDistance2)
-						Color = ColorH;
-					else Color = ColorB;
+					float sum = DGR.x + DGR.y + DGR.z + WSGT.x + WSGT.y + WSGT.z + WSGT.w;
+					DGR /= sum;
+					WSGT /= sum;
 
-					
-					if (Depth >= _LODDistance3 * (1 - blendSize)) {
-						Color = lerp(Color, microfacet(input, satellite, float3(0,0,1), 1), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
+					//return float4(Normal, 1);
+
+					if (_enableNoise == 1) {
+						input.uv += _noiseStrength * Noise.xy;
 					}
+
+					/*
+					if (WSGT.r == 1) return float4(1, 0, 0, 1);
+					else if (WSGT.g == 1) return float4(0, 1, 0, 1);
+					else if (WSGT.b == 1) return float4(0, 0, 1, 1);
+					else if (WSGT.a == 1) return float4(1, 1, 1, 1);
+
+					else return float4(0, 0, 0, 0);
+					*/
+					float4 Color = float4(0, 0, 0, 1.0);
+
+					if (Depth < _LODDistance3) {
+						float wetness = pow(saturate(5.0*WSGT.y + 1.2*(WSGT.x > 0.5 ? 0 : WSGT.x)), 1.5);
+
+						float4 ColorH = float4(0, 0, 0, 0);
+						float4 ColorB = float4 (0, 0, 0, 0);
+
+						if (Depth < _LODDistance2) {
+							float waterH = WSGT.x;
+							float snowH = 0;
+							float grassH = 0;
+							float treesH = 0;
+							float rockH = 0;
+							float dirtH = 0;
+							float gravelH = 0;
+							float commonH = 0;
+
+							//Snow
+							if (WSGT.y > 0)
+							{
+								snowH = SnowH(WSGT.y);
+							}
+							//Grass
+							if (WSGT.z > 0)
+							{
+								grassH = GrassH(WSGT.z);
+							}
+							//Trees
+							if (WSGT.a > 0)
+							{
+								treesH = 0;//HEIGHT(Trees, WSGT.y, 2);
+							}
+							//Dirt
+							if (DGR.x > 0)
+							{
+								dirtH = DirtH(DGR.x);
+							}
+							//Gravel
+							if (DGR.y > 0)
+							{
+								gravelH = GravelH(DGR.y);
+							}
+							//Rock
+							if (DGR.z > 0)
+							{
+								rockH = RockH(DGR.z);//HEIGHT(_Rock, DGR.z, 0)
+							}
+
+							if (DGR.y > 0 || DGR.x > 0 || WSGT.z > 0) {
+								commonH = CommonH(max(DGR.y, max(DGR.x, WSGT.z)));
+							}
+
+
+							float maxH = max(rockH, max(gravelH, max(dirtH, max(treesH, max(grassH, max(snowH, commonH))))));
+							//return maxH;
+							if (maxH == treesH) ColorH = Trees(input, WSGT.a);
+							else if (maxH == snowH) ColorH = Snow(input, WSGT.y);
+							else if (maxH == gravelH) ColorH = Gravel(input, DGR.y, wetness, gravelH);
+							else if (maxH == grassH) ColorH = Grass(input, WSGT.z, wetness, grassH);
+							else if (maxH == dirtH) ColorH = Dirt(input, DGR.x, wetness, dirtH);
+							else if (maxH == rockH || maxH == commonH) ColorH = Rock(input, DGR.z, wetness, rockH, commonH);
+
+							if (waterH > maxH) ColorH = lerp(ColorH, Water(input), sqrt(saturate(waterH - 0.5) / 0.5));
+						}
+
+						if (Depth >= _LODDistance2 * (1 - blendSize)) {
+							float4 water = float4(0, 0, 0, 0);
+							float4 snow = float4(0, 0, 0, 0);
+							float4 grass = float4(0, 0, 0, 0);
+							float4 trees = float4(0, 0, 0, 0);
+							float4 dirt = float4(0, 0, 0, 0);
+							float4 gravel = float4(0, 0, 0, 0);
+							float4 rock = float4(0, 0, 0, 0);
+
+							//Water
+							if (WSGT.x > 0)
+							{
+								water = Water(input);
+							}
+							//Snow
+							if (WSGT.y > 0)
+							{
+								snow = Snow(input, WSGT.y);
+							}
+							//Grass
+							if (WSGT.z > 0)
+							{
+								grass = Grass(input, WSGT.z, wetness, 0);
+							}
+							//Trees
+							if (WSGT.a > 0)
+							{
+								trees = Trees(input, WSGT.a);
+							}
+							//Dirt
+							if (DGR.x > 0)
+							{
+								dirt = Dirt(input, DGR.x, wetness, 0);
+							}
+							//Gravel
+							if (DGR.y > 0)
+							{
+								gravel = Gravel(input, DGR.y, wetness, 0);
+							}
+							//Rock
+							if (DGR.z > 0)
+							{
+								rock = Rock(input, DGR.z, wetness, 1, 0);
+							}
+
+
+							ColorB = float4(rock.rgb*DGR.z + gravel.rgb*DGR.y + dirt.rgb*DGR.x + trees.rgb*WSGT.w + grass.rgb*WSGT.z + snow.rgb*WSGT.y + water.rgb*WSGT.x, 1.0);
+						}
+
+						if (Depth < _LODDistance2 && Depth >= _LODDistance2 * (1 - blendSize))
+							Color = lerp(ColorH, ColorB, (Depth - _LODDistance2 * (1 - blendSize)) / (_LODDistance2*blendSize));
+						else if (Depth < _LODDistance2)
+							Color = ColorH;
+						else Color = ColorB;
+
+
+						if (Depth >= _LODDistance3 * (1 - blendSize)) {
+							Color = lerp(Color, microfacet(input, satellite, float3(0, 0, 1), 1), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
+						}
+
+					}
+					else if (Depth < _LODDistance4) {
+						Color = microfacet(input, satellite, float3(0, 0, 1), 1);
+
+						if (Depth >= _LODDistance4 * (1 - blendSize)) {
+							Color = lerp(Color, satellite, (Depth - _LODDistance4 * (1 - blendSize)) / (_LODDistance4*blendSize));
+						}
+					}
+					else Color = satellite;
+
+
+					return Color;
 					
 				}
-				else if(Depth < _LODDistance4){
-					Color = microfacet(input, satellite, float3(0, 0, 1), 1);
-
-					if (Depth >= _LODDistance4 * (1 - blendSize)) {
-						Color = lerp(Color, satellite, (Depth - _LODDistance4 * (1 - blendSize)) / (_LODDistance4*blendSize));
-					}
+				else
+				{
+					return microfacet(input, satellite, float3(0, 0, 1), 1);
 				}
-				else Color = satellite;
-
-
-				return Color;
 
 			}
 			ENDCG
