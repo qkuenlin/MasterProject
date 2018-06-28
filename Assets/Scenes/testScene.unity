@@ -1210,7 +1210,7 @@ MonoBehaviour:
   Tessellation: 1
   EnableDetails: 1
   EnableNormalMaps: 1
-  HeightBasedMix: 1
+  HeightBasedMix: 0
   AmbientLightColor: {r: 0.7311321, g: 0.93253005, b: 1, a: 0}
   AmbientLightStrength: 0.4
   SatelliteProportion: 0
@@ -1320,7 +1320,7 @@ MonoBehaviour:
   lodDistance3: 1000
   lodDistance4: 5000
   lodDebug: 0
-  materialDebug: 1
+  materialDebug: 0
   GravelDebug: {r: 1, g: 0, b: 0, a: 0}
   GrassDebug: {r: 0.079197526, g: 1, b: 0, a: 0}
   DirtDebug: {r: 0.5754717, g: 0.3573199, b: 0.1981577, a: 0}
