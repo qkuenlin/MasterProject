@@ -257,6 +257,23 @@ public class MaterialManager : MonoBehaviour
     public bool lodDebug;
 
     [SerializeField]
+    public bool materialDebug;
+    [SerializeField]
+    public Color GravelDebug;
+    [SerializeField]
+    public Color GrassDebug;
+    [SerializeField]
+    public Color DirtDebug;
+    [SerializeField]
+    public Color RockDebug;
+    [SerializeField]
+    public Color SnowDebug;
+    [SerializeField]
+    public Color WaterDebug;
+    [SerializeField]
+    public Color TreesDebug;
+
+    [SerializeField]
     public ReflectionProbe reflectionProbe;
 
     private Texture2DArray Textures;
@@ -513,7 +530,6 @@ public class MaterialManager : MonoBehaviour
             int i = reflectionProbe.RenderProbe();
 
             yield return new WaitWhile(() => reflectionProbe.IsFinishedRendering(i));
-            Debug.Log("Rendered probes");
             reflectionCubeMap = reflectionProbe.texture;
 
             foreach (Material m in materials)
@@ -522,7 +538,7 @@ public class MaterialManager : MonoBehaviour
                     m.SetTexture("_ReflectionCubeMap", reflectionCubeMap);
             }
 
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(1f);
         }
     }
 
@@ -631,6 +647,17 @@ public class MaterialManager : MonoBehaviour
             m.SetInt("_SlopeModifierEnabled", SlopeModifierEnabled ? 1 : 0);
             m.SetFloat("_SlopeModifierThreshold", SlopeModifierThreshold);
             m.SetFloat("_SlopeModifierStrength", SlopeModifierStrength);
+
+            m.SetInt("_MaterialDebug", materialDebug ? 1 : 0);
+            m.SetColor("_GravelDebug", GravelDebug);
+            m.SetColor("_GrassDebug", GrassDebug);
+            m.SetColor("_DirtDebug", DirtDebug);
+            m.SetColor("_RockDebug", RockDebug);
+            m.SetColor("_WaterlDebug", WaterDebug);
+            m.SetColor("_TreesDebug", TreesDebug);
+            m.SetColor("_SnowDebug", SnowDebug);
+
+
 
         }
 

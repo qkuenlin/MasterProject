@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using UnityEditor;
 using UnityEngine;
-using UnityEditor;
 
 [CustomEditor(typeof(MaterialManager))]
 public class MaterialManagerEditor : Editor
@@ -59,6 +57,21 @@ public class MaterialManagerEditor : Editor
                 myScript.EnableDetails = EditorGUILayout.Toggle("Enable Details", myScript.EnableDetails);
                 myScript.HeightBasedMix = EditorGUILayout.Toggle("Height Based Mix", myScript.HeightBasedMix);
                 myScript.Tessellation = EditorGUILayout.Toggle("Tessellation", myScript.Tessellation);
+
+                myScript.materialDebug = EditorGUILayout.Toggle("Debug Material", myScript.materialDebug);
+                if (myScript.materialDebug)
+                {
+                    myScript.RockDebug = EditorGUILayout.ColorField("Rock", myScript.RockDebug);
+                    myScript.SnowDebug = EditorGUILayout.ColorField("Snow", myScript.SnowDebug);
+                    myScript.GravelDebug = EditorGUILayout.ColorField("Gravel", myScript.GravelDebug);
+                    myScript.GrassDebug = EditorGUILayout.ColorField("Grass", myScript.GrassDebug);
+                    myScript.DirtDebug = EditorGUILayout.ColorField("Dirt", myScript.DirtDebug);
+                    myScript.WaterDebug = EditorGUILayout.ColorField("Water", myScript.WaterDebug);
+                    myScript.TreesDebug = EditorGUILayout.ColorField("Forest", myScript.TreesDebug);
+
+                }
+
+
                 EditorGUI.indentLevel--;
             }
 

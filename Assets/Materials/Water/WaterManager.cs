@@ -182,8 +182,6 @@ public class WaterManager : MonoBehaviour
                                     Mathf.Log(lambdaMin) / Mathf.Log(2.0f), 
                                     (nbWaves - 1.0f) / (Mathf.Log(lambdaMax) / Mathf.Log(2.0f) - Mathf.Log(lambdaMin) / Mathf.Log(2.0f)));
 
-        Debug.Log(lods);
-
         Matrix4x4 worldToWind = new Matrix4x4();
         worldToWind[0, 0] = Mathf.Cos(wavesDirection);
         worldToWind[0, 1] = Mathf.Sin(wavesDirection);

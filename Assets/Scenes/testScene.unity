@@ -594,7 +594,7 @@ ReflectionProbe:
   m_Mode: 1
   m_RefreshMode: 2
   m_TimeSlicingMode: 1
-  m_Resolution: 512
+  m_Resolution: 128
   m_UpdateFrequency: 0
   m_BoxSize: {x: 3000, y: 3000, z: 3000}
   m_BoxOffset: {x: 0, y: 0, z: 0}
@@ -1091,7 +1091,6 @@ MonoBehaviour:
   waterColor: {r: 0.34117648, g: 0.5294118, b: 0.6509804, a: 1}
   waterRoughness: 0
   gridSize: 19.101562
-  height: 768
   terrainMaterials:
   - {fileID: 2100000, guid: ca8c043baae742c47bd342ae533126ba, type: 2}
   - {fileID: 2100000, guid: 0e2a122db8f36fe45a4617d8b4310514, type: 2}
@@ -1289,7 +1288,7 @@ MonoBehaviour:
   GrassNormaLargeStrength: 0.3
   GrassNormaDetailStrength: 1
   GrassRoughnessModifier: 1
-  GrassRoughnessModifierStrength: 1
+  GrassRoughnessModifierStrength: 0.2
   GrassColorLarge: {fileID: 2800000, guid: 54de658d61f91604cbf491242d77064a, type: 3}
   GrassRoughnessLarge: {fileID: 2800000, guid: 5927c20e453f29c4f8d2d700dc2933d0, type: 3}
   GrassNormalLarge: {fileID: 2800000, guid: aea6a03e27ff4524491e22c821c52de6, type: 3}
@@ -1317,10 +1316,18 @@ MonoBehaviour:
   SlopeModifierDebug: 0
   lodDistance0: 10
   lodDistance1: 75
-  lodDistance2: 300
+  lodDistance2: 50
   lodDistance3: 1000
   lodDistance4: 5000
   lodDebug: 0
+  materialDebug: 1
+  GravelDebug: {r: 1, g: 0, b: 0, a: 0}
+  GrassDebug: {r: 0.079197526, g: 1, b: 0, a: 0}
+  DirtDebug: {r: 0.5754717, g: 0.3573199, b: 0.1981577, a: 0}
+  RockDebug: {r: 0.4245283, g: 0.4245283, b: 0.4245283, a: 0}
+  SnowDebug: {r: 1, g: 1, b: 1, a: 0}
+  WaterDebug: {r: 0, g: 0.70026994, b: 1, a: 0}
+  TreesDebug: {r: 0.21137415, g: 0.4716981, b: 0.21407974, a: 0}
   reflectionProbe: {fileID: 1145122672}
 --- !u!4 &2064939522
 Transform:

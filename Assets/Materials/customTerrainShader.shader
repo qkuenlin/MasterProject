@@ -24,6 +24,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 			#include "UnityStandardBRDF.cginc"
 			#include "UnityGlobalIllumination.cginc"
 			#include "UnityStandardConfig.cginc"
+			#include "UnityImageBasedLighting.cginc"
 
 
 			#pragma vertex vertex //vert
@@ -55,10 +56,17 @@ Shader "Custom/customTerrainShader_hlsl" {
 			float4x4 _windToWorld;
 			/* -------- */
 
-			fixed4 _AmbientLightColor;
-			half _AmbientLightStrength;
-
 			UNITY_DECLARE_TEX2DARRAY(_HeightTextures);
+
+			int _MaterialDebug;
+			float4 _GravelDebug;
+			float4 _DirtDebug;
+			float4 _RockDebug;
+			float4 _GrassDebug;
+			float4 _TreesDebug;
+			float4 _WaterDebug;
+			float4 _SnowDebug;
+
 
 			int _N_NOISE;
 			int _enableNormalMap;
@@ -192,6 +200,31 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 			};
 
+			uint ReverseBits32(uint bits)
+			{
+#if 0 // Shader model 5
+				return reversebits(bits);
+#else
+				bits = (bits << 16) | (bits >> 16);
+				bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >> 8);
+				bits = ((bits & 0x0f0f0f0f) << 4) | ((bits & 0xf0f0f0f0) >> 4);
+				bits = ((bits & 0x33333333) << 2) | ((bits & 0xcccccccc) >> 2);
+				bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >> 1);
+				return bits;
+#endif
+			}
+			//-----------------------------------------------------------------------------
+			float RadicalInverse_VdC(uint bits)
+			{
+				return float(ReverseBits32(bits)) * 2.3283064365386963e-10; // 0x100000000
+			}
+
+			//-----------------------------------------------------------------------------
+			float2 Hammersley2d(uint i, uint maxSampleCount)
+			{
+				return float2(float(i) / float(maxSampleCount), RadicalInverse_VdC(i));
+			}
+
 			float RockH(v2f input, float weight) {
 				float hL = (UNITY_SAMPLE_TEX2DARRAY_LOD(_HeightTextures, float3(input.uv*_RockUVLargeMultiply, 0.0 + _N_NOISE),0)).r;
 				return ((hL)*_RockHeightStrength / (2.0) + _RockHeightOffset) * weight;
@@ -262,9 +295,9 @@ Shader "Custom/customTerrainShader_hlsl" {
 					float3 cameraDir = normalize(mul(screenToCamera, v.vertex).xyz);
 					float3 worldDir = mul(cameraToWorld, float4(cameraDir, 0.0)).xyz;
 
-					float t = (v.vertex.y - _WorldSpaceCameraPos.y);
+					float t = length(_WorldSpaceCameraPos - o.worldSpacePosition.xyz);
 
-					o.lod = t * _lods.y;//length(_WorldSpaceCameraPos - o.worldSpacePosition.xyz); // size in meters of one grid cell, projected on the sea surface
+					o.lod = _lods.y;//length(_WorldSpaceCameraPos - o.worldSpacePosition.xyz); // size in meters of one grid cell, projected on the sea surface
 
 					o.u =  mul(_worldToWind, float4(v.vertex.xz , 0, 0) ).xy;//mul(_worldToWind, _WorldSpaceCameraPos.xz + t * worldDir.xy);
 
@@ -423,13 +456,35 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 			float blendSize;
 
+			float wetness;
+
 			float3 tspace0;
 			float3 tspace1;
 			float3 tspace2;
 
 			float DetailMaterialWeight;
 
-			float M_PI = 3.1415f;
+
+			float4 DGR;
+			float4 WSGT;
+
+			float M_PI = 3.141592f;
+
+			struct Material {
+				float4 Albedo;
+				float3 Normal;
+				float Roughness;
+			};
+
+			Material lerpMaterial(Material m0, Material m1, float w) {
+				Material m;
+				m.Albedo = lerp(m0.Albedo, m1.Albedo, w);
+				m.Normal = normalize(lerp(m0.Normal, m1.Normal, w));
+				m.Roughness = lerp(m0.Roughness, m1.Roughness, w);
+
+				return m;
+			}
+
 
 			float3 LAB2RGB(float3 color) {
 				float y = (color.x + 16.0) / 116.0;
@@ -566,6 +621,126 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return 1.0 / ((cosThetaO * (1.0 - a) + a)*(cosThetaI*(1.0 - a) + a));
 			}
 
+			float V_SmithGGXCorrelated(float NdotL, float NdotV, float alphaG) {
+				float alphaG2 = alphaG * alphaG;
+
+				float Lambda_GGXV = NdotL * sqrt((-NdotV * alphaG2 + NdotV) * NdotV + alphaG2);
+				float Lambda_GGXL = NdotV * sqrt((-NdotL * alphaG2 + NdotL) * NdotL + alphaG2);
+
+				return 0.5f / (Lambda_GGXV + Lambda_GGXL);
+			}
+
+			float D_GGX(float NdotH, float m) {
+				float m2 = m * m;
+				float f = (NdotH * m2 - NdotH) * NdotH + 1;
+
+				return m2 / (f*f);
+			}
+
+			float F_Schlick(float3 f0, float f90, float u) {
+				return f0 + (f90 - f0) * pow(1.0f - u, 5.0f);
+			}
+
+			float Fr_DisneyDiffuse(float NdotV, float NdotL, float LdotH, float linearRoughness) {
+				float energyBias = lerp(0, 0.5, linearRoughness);
+				float energyFactor = lerp(1.0, 1.0 / 1.51, linearRoughness);
+				float fd90 = energyBias + 2.0 * LdotH*LdotH*linearRoughness;
+				float f0 = float3(1.0f, 1.0f, 1.0f);
+
+				float lightScatter = F_Schlick(f0, fd90, NdotL).r;
+				float viewScatter = F_Schlick(f0, fd90, NdotV).r;
+
+				return lightScatter * viewScatter * energyFactor;
+			}
+
+			void importanceSampleCosDir(in float2 u, in float3 N, out float3 wo, out float NdotL, out float pdf) {
+				//Build Local Referential
+				float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+				float3 tangentX = normalize(cross(upVector, N));
+				float3 tangentY = cross(N, tangentX);
+
+				float r = sqrt(u.x);
+				float phi = u.y * 3.141592 * 2;
+
+				wo = float3(r*cos(phi), r*sin(phi), sqrt(max(0.0f, 1.0f - u.x)));
+				wo = normalize(tangentX * wo.y + tangentY * wo.x + N * wo.z);
+
+				NdotL = dot(wo, N);
+				pdf = NdotL / 3.141592;
+			}
+
+			/*
+			float3 evaluateIBLDiffuseCubeReference(float3 N, float3 wi, float roughness) {
+				float3 accLight = 0;
+
+				int _sampleCount = 128;
+				[unroll(128)]
+				for (int i = 0; i < _sampleCount; ++i) {
+					float2 u = Hammersley2d(i, _sampleCount);
+					float3 wo;
+					float NdotL;
+					float pdf;
+					importanceSampleCosDir(u, N, wo, NdotL, pdf);
+					if (NdotL > 0) {
+						float cosD = sqrt((dot(wi, wo) + 1.0f)*0.5);
+						float NdotV = saturate(dot(N, wi));
+						float NdotL_sat = saturate(NdotL);
+						
+						float fd90 = 0.5 + 2 * cosD*cosD*sqrt(roughness);
+						float lightScatter = 1 + (fd90 - 1)*pow(1 - NdotL_sat, 5);
+						float viewScatter = 1 + (fd90 - 1)*pow(1 - NdotV, 5);
+
+						accLight += texCUBE(_ReflectionCubeMap, L).rgb * viewScatter * lightScatter;
+					}
+				}
+				return accLight *(1.0f / _sampleCount);
+			}
+			
+			// Based on Appendix A of Moving Frostbite to PBR
+			float3 evaluateSpecularIBLReference(float3 N, float3 V, float roughness, float f0, float f90) {
+				//Build Local Referential
+				float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+				float3 tangentX = normalize(cross(upVector, N));
+				float3 tangentY = cross(N, tangentX);
+
+				float3 accLight = 0;
+
+				int _sampleCount = 32;
+				for (int i = 0; i < _sampleCount; ++i) {
+					float2 u = Hammersley2d(i, _sampleCount);
+
+					float cosThetaH = sqrt((1 - u.x) / (1 + (roughness*roughness - 1)*u.x));
+					float sinThetaH = sqrt(1 - min(1.0, cosThetaH*cosThetaH));
+					float phiH = u.y * 3.141592 * 2;
+
+					float3 H;
+					H = float3(sinThetaH*cos(phiH), sinThetaH*sin(phiH), cosThetaH);
+					H = normalize(tangentX * H.y + tangentY * H.x + N * H.z);
+					L = normalize(2.0f * dot(V, H) * H - V);
+
+					if (dot(L, N) > 0) {
+						float LdotH = saturate(dot(H, L));
+						float NdotH = saturate(dot(H, N));
+						float NdotV = saturate(dot(V, N));
+						float NdotL = saturate(dot(L, N));
+
+						float D = D_GGX(NdotH, roughness);
+						float pdfH = D * NdotH;
+						float pdf = pdfH / (4.0f * LdotH);
+
+						float3 F = F_Schlick(f0, f90, LdotH);
+						float G = V_SmithGGXCorrelated(NdotL, NdotV, roughness);
+						float weight = F * G * D / (4.0 * NdotV);
+
+						if (pdf > 0 && weight > 0) {
+							accLight += texCUBE(_ReflectionCubeMap, L).rgb * weight / pdf;
+						}
+					}
+				}
+
+				return accLight / _sampleCount;
+			}
+			*/
 			float Geom(float3 v, float3 H, float3 N, float roughness)
 			{
 				float cosTheta = dot(v, N);
@@ -669,35 +844,45 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return normalize(cross(v1,v2));
 			}
 
-			float4 microfacet(v2f input, float4 albedo, float3 N, float roughness) {
+			float4 microfacet(Material m) {
+				if (_MaterialDebug == 1) {
+					return m.Albedo;
+				}
+
 				float3 Normal = float3(0, 0, 0);
 				
-				Normal.x = dot(tspace0, N.xyz);
-				Normal.y = dot(tspace1, N.xyz);
-				Normal.z = dot(tspace2, N.xyz);
+				Normal.x = dot(tspace0, m.Normal.xyz);
+				Normal.y = dot(tspace1, m.Normal.xyz);
+				Normal.z = dot(tspace2, m.Normal.xyz);
+
+				//return float4(Normal, 1.0);
+				//return albedo * Fr_DisneyDiffuse(dot(Normal, V.xzy), dot(Normal, L.xzy), dot(Normal, H.xzy), roughness);
 				
 				float cosThetaO = dot(L, Normal);
 				float cosThetaI = dot(V, Normal);
 				float cosThetaH = dot(H, Normal);
 
+				//return Fr_DisneyDiffuse(cosThetaI, cosThetaO, cosThetaH, sqrt(roughness));
+
+
 				/* DIRECT ILLUMINATION + SPECULAR HIGHLIGHT*/
 				fixed4 specular = fixed4(0.0, 0, 0, 0);
 				if (cosThetaH > 0 && cosThetaO > 0) {
-					float F = fresnel(dot(H, V), 1.5f);
-					float D = blinnPhong(cosThetaH, roughness) * 3.141592 / 4.0;
-					float G = smithShadowing(cosThetaI, cosThetaO, roughness);// (cosThetaO*cosThetaI);//Geom(V, H, Normal, roughness)*Geom(L, H, Normal, roughness) / (cosThetaO*cosThetaI);
+					float F = fresnel(dot(L, H), 1.5f);
+					float D = blinnPhong(cosThetaH, m.Roughness) * 3.141592 / 4.0;
+					float G = smithShadowing(cosThetaI, cosThetaO, m.Roughness);// (cosThetaO*cosThetaI);//Geom(V, H, Normal, roughness)*Geom(L, H, Normal, roughness) / (cosThetaO*cosThetaI);
 					
 					specular = saturate(D * F * G) * _LightColor0;
 				}
 
 				float dotNL_ = (cosThetaO+1)/2.0;
 				dotNL_ *= dotNL_;
-				fixed4 diffuse = saturate(albedo *_LightColor0 * cosThetaO);// +saturate(albedo * _AmbientLightColor * _AmbientLightStrength);
+				fixed4 diffuse = saturate(m.Albedo *_LightColor0 * cosThetaO);
 
-				float4 Direct = diffuse + (1 - roughness)*specular;
+				float4 Direct = diffuse + (1 - m.Roughness)*specular;
 
 				/* INDIRECT ILLUMINATION */
-				
+				/*
 				float4 IndirectLight = float4(0, 0, 0, 0);
 				for (int i = 0; i < 9; i++) {
 					float3 wo = reflect(-V, Normal);
@@ -716,10 +901,16 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 					IndirectLight += dot(wo, Normal) * texCUBElod(_ReflectionCubeMap, float4(wo, roughness*roughness * 7));
 				}
-
 				IndirectLight /= 9.0;
+				*/
 
-				float4 Indirect = lerp(albedo*IndirectLight, IndirectLight, (1-roughness)*fresnel(dot(Normal, V), 1.33f));
+				half mip = perceptualRoughnessToMipmapLevel(m.Roughness);
+
+				float3 wo = reflect(-V, Normal);
+
+				float4 IndirectLight = dot(wo, Normal) * texCUBElod(_ReflectionCubeMap, float4(wo, mip));
+
+				float4 Indirect = lerp(m.Albedo*IndirectLight, IndirectLight, (1-m.Roughness)*fresnel(dot(H, V), 1.33f));
 				
 				/* DIRECT REFLECTION */
 				//float3 reflectDir = reflect(-V, Normal);
@@ -728,7 +919,13 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return saturate(Direct + Indirect);
 			}
 
-			float4 Gravel(v2f input, float weight, float wetness, float height) {
+			Material Gravel(float weight, float wetness, float height) {
+				if (_MaterialDebug == 1) {
+					Material m;
+					m.Albedo = _GravelDebug;
+					return m;
+				}
+
 
 				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 6+0.0)));
 				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVLargeMultiply, 6+0.0), 9));
@@ -740,14 +937,16 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float3 N = _enableNormalMap ? lerp(float3(0,0,1), UnpackNormal(tex2D(_GravelNormalLarge, UV*_GravelUVLargeMultiply)), _GravelNormalLargeStrength) : float3(0, 0, 1);
 
 				if (_enableDetails && (Depth < _LODDistance1)) {
-					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVDetailMultiply, 6+1.0)));
-					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVDetailMultiply, 6+1.0), 9));
+					float lod = 9 * (sqrt(_GravelUVDetailMultiply)/10) * Depth / (_LODDistance1);
 
-					float roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVDetailMultiply, 6+3.0)).x;
+					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVDetailMultiply, 6+1.0), lod));
+					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVDetailMultiply, 6+1.0), 8+lod));
+
+					float roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVDetailMultiply, 6+3.0), lod).x;
 
 					float4 colorD = ColorTransfer(albedo, albedoD, albedoDM);
 
-					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2D(_GravelNormalDetail, UV*_GravelUVDetailMultiply)) : float3(0, 0, 1);
+					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2Dlod(_GravelNormalDetail, float4(UV*_GravelUVDetailMultiply, 0, lod))) : float3(0, 0, 1);
 
 					if (Depth >= _LODDistance1 * (1 - blendSize)) {
 						float w = (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize);
@@ -777,28 +976,40 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				albedo *= lerp(1.0, 0.6, wetratio);
 
-				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
+				Material m;
+				m.Albedo = albedo;
+				m.Normal = N;
+				m.Roughness = roughness;
+				return m;
 			}
 
-			float4 Dirt(v2f input, float weight, float wetness, float height) {
-				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 6 + 0.0)));
-				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVLargeMultiply, 6 + 0.0), 9));
+			Material Dirt(float weight, float wetness, float height) {
+				if (_MaterialDebug == 1) {
+					Material m;
+					m.Albedo = _DirtDebug;
+					return m;
+				}
 
-				float roughness = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 6 + 2.0)).x;
+				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 10 + 0.0)));
+				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GravelUVLargeMultiply, 10 + 0.0), 9));
+
+				float roughness = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GravelUVLargeMultiply, 10 + 2.0)).x;
 
 				float4 albedo = ColorTransfer(satellite, albedoL, albedoLM);
 
 				float3 N = _enableNormalMap ? lerp(float3(0, 0, 1), UnpackNormal(tex2D(_GravelNormalLarge, UV*_GravelUVLargeMultiply)), _GravelNormalLargeStrength) : float3(0, 0, 1);
 
 				if (_enableDetails && (Depth < _LODDistance1)) {
-					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 1.0)));
-					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 1.0), 9));
+					float lod = 9 * (sqrt(_DirtUVDetailMultiply) / 10) * Depth / (_LODDistance1);
 
-					float roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 3.0)).x;
+					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 1.0), lod));
+					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 1.0), 8 + lod));
+
+					float roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_DirtUVDetailMultiply, 10 + 3.0), lod).x;
 
 					float4 colorD = ColorTransfer(albedo, albedoD, albedoDM);
 
-					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2D(_DirtNormalDetail, UV*_DirtUVDetailMultiply)) : float3(0, 0, 1);
+					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2Dlod(_DirtNormalDetail, float4(UV*_DirtUVDetailMultiply, 0, lod))) : float3(0, 0, 1);
 
 					if (Depth >= _LODDistance1 * (1 - blendSize)) {
 						float w = (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize);
@@ -828,10 +1039,19 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				albedo *= lerp(1.0, 0.6, wetratio);
 
-				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
+				Material m;
+				m.Albedo = albedo;
+				m.Normal = N;
+				m.Roughness = roughness;
+				return m;
 			}
 
-			float4 Rock(v2f input, float weight, float wetness, float height, float height2) {
+			Material Rock(float weight, float wetness, float height, float height2) {
+				if (_MaterialDebug == 1) {
+					Material m;
+					m.Albedo = _RockDebug;
+					return m;
+				}
 
 				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVLargeMultiply, 0.0)));
 				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVLargeMultiply, 0.0), 9));
@@ -843,15 +1063,16 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float3 N = _enableNormalMap ? UnpackNormal(tex2D(_RockNormalLarge, UV*_RockUVLargeMultiply)) : float3(0,0,1);
 
 				if (_enableDetails && (Depth < _LODDistance1)) {
-					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVDetailMultiply, 1.0)));
-					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVDetailMultiply, 1.0), 9));
+					float lod = 9 * (sqrt(_RockUVDetailMultiply) / 10) * Depth / (_LODDistance1);
 
-					float roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_RockUVDetailMultiply, 3.0)).x;
+					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVDetailMultiply, 0 + 1.0), lod));
+					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVDetailMultiply, 0 + 1.0), 8 + lod));
+
+					float roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_RockUVDetailMultiply, 0 + 3.0), lod).x;
 
 					float4 colorD = ColorTransfer(albedo, albedoD, albedoDM);
 
-					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2D(_RockNormalDetail, UV*_RockUVDetailMultiply)) : float3(0,0,1);
-
+					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2Dlod(_RockNormalDetail, float4(UV*_RockUVDetailMultiply, 0, lod))) : float3(0, 0, 1);
 					if (Depth >= _LODDistance1 * (1 - blendSize)) {
 						float w = (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize);
 						albedo = lerp(colorD, albedo, w);
@@ -874,19 +1095,36 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				albedo *= lerp(1.0, 0.6, wetratio);
 
-				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
+				Material m;
+				m.Albedo = albedo;
+				m.Normal = N;
+				m.Roughness = roughness;
+				return m;
 			}
 
+			Material Trees(float weight) {
+				if (_MaterialDebug == 1) {
+					Material m;
+					m.Albedo = _TreesDebug;
+					return m;
+				}
 
-
-			float4 Trees(v2f input, float weight) {
 				float3 Normal = float3(0, 0, 1);
-				float height = (input.worldSpacePosition.y)* weight;
 
-				return float4(microfacet(input, satellite, Normal, 1).rgb, height);
+				Material m;
+				m.Albedo = satellite;
+				m.Normal = float3(0,0,1);
+				m.Roughness = 1;
+				return m;
 			}
 
-			float4 Grass(v2f input, float weight, float wetness, float height) {
+			Material Grass(float weight, float wetness, float height) {
+				if (_MaterialDebug == 1) {
+					Material m;
+					m.Albedo = _GrassDebug;
+					return m;
+				}
+
 				float4 albedoL = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVLargeMultiply, 14 + 0.0)));
 				float4 albedoLM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVLargeMultiply, 14 + 0.0), 9));
 
@@ -897,14 +1135,16 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float3 N = _enableNormalMap ? lerp(float3(0, 0, 1), UnpackNormal(tex2D(_GrassNormalLarge, UV*_GrassUVLargeMultiply)), _GrassNormalLargeStrength) : float3(0, 0, 1);
 
 				if (_enableDetails && (Depth < _LODDistance1)) {
-					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1.0)));
-					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1.0), 9));
+					float lod = 9 * (sqrt(_GrassUVDetailMultiply) / 10) * Depth / (_LODDistance1);
 
-					float roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 3.0)).x;
+					float4 albedoD = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1.0), lod));
+					float4 albedoDM = (UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 1.0), 8 + lod));
+
+					float roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_GrassUVDetailMultiply, 14 + 3.0), lod).x;
 
 					float4 colorD = ColorTransfer(albedo, albedoD, albedoDM);
 
-					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2D(_GrassNormalDetail, UV*_GrassUVDetailMultiply)) : float3(0, 0, 1);
+					float3 NormalD = _enableNormalMap ? UnpackNormal(tex2Dlod(_GrassNormalDetail, float4(UV*_GrassUVDetailMultiply, 0, lod))) : float3(0, 0, 1);
 
 					if (Depth >= _LODDistance1 * (1 - blendSize)) {
 						float w = (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize);
@@ -934,18 +1174,29 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				albedo *= lerp(1.0, 0.6, wetratio);
 
-				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
+				Material m;
+				m.Albedo = albedo;
+				m.Normal = N;
+				m.Roughness = roughness;
+				return m;
 			}
 
-			float4 Snow(v2f input, float weight) {
+			Material Snow(float weight) {
+				if (_MaterialDebug == 1) {
+					Material m;
+					m.Albedo = _SnowDebug;
+					return m;
+				}
 				float detailStrength = _enableDetails ? lerp(0, _SnowDetailStrength, LOD) : 0;
 
 				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_SnowUVLargeMultiply, 2.0)).x;
 
 				float roughnessD = 1.0;
 
+				float lod = 9 * (sqrt(_SnowUVDetailMultiply) / 10) * Depth / (_LODDistance1);
+
 				if (detailStrength > 0) {
-					roughnessD = UNITY_SAMPLE_TEX2DARRAY(_Textures, float3(UV*_SnowUVDetailMultiply, 3.0)).x;
+					roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_Textures, float3(UV*_SnowUVDetailMultiply, 3.0), lod).x;
 				}
 				float4 albedo = lerp(float4(1,1,1,1), satellite, 0.5);//float4(1, 1, 1, 1);
 
@@ -957,7 +1208,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 					float3 NL = UnpackNormal(tex2D(_SnowNormalLarge, UV*_SnowUVLargeMultiply));
 					NL = normalize(lerp(float3(0, 0, 1), NL, _SnowNormalLargeStrength));
 
-					float3 ND = UnpackNormal(tex2D(_SnowNormalDetail, UV*_SnowUVDetailMultiply));
+					float3 ND = UnpackNormal(tex2Dlod(_SnowNormalDetail, float4(UV*_SnowUVDetailMultiply, 0, lod)));
 					ND = normalize(lerp(float3(0, 0, 1), ND, _SnowNormalDetailStrength));
 
 					N = blendNormal(NL, ND, detailStrength);
@@ -968,10 +1219,15 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float wetratio = saturate(1-weight);
 				roughness = lerp(roughness, 0.1, wetratio);
 
-				return float4(microfacet(input, albedo, N, roughness).rgb, 1);
+				Material m;
+				m.Albedo = albedo;
+				m.Normal = N;
+				m.Roughness = roughness;
+				return m;
 			}
 
 			float4 Water(v2f input) {
+				if (_MaterialDebug == 1) return _WaterDebug;
 
 				float3 dPdu = input.dPdu;
 				float3 dPdv = input.dPdv;
@@ -1170,6 +1426,57 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return height * weight;
 			}
 
+			void findMaxH(float rockH, float gravelH, float dirtH, float treesH, float grassH, float snowH, float commonH, out float maxH0, out float maxH1) {
+				maxH0 = max(rockH, gravelH);
+				maxH1 = min(gravelH, rockH);
+
+				if (maxH0 < dirtH) {
+					if (maxH1 < maxH0) maxH1 = maxH0;
+					maxH0 = dirtH;
+				}
+				else if (maxH1 < dirtH) maxH1 = dirtH;
+
+				if (maxH0 < treesH) {
+					if (maxH1 < maxH0) maxH1 = maxH0;
+					maxH0 = treesH;
+				}
+				else if (maxH1 < treesH) maxH1 = treesH;
+
+				if (maxH0 < grassH) {
+					if (maxH1 < maxH0) maxH1 = maxH0;
+					maxH0 = grassH;
+				}
+				else if (maxH1 < grassH) maxH1 = grassH;
+
+				if (maxH0 < snowH) {
+					if (maxH1 < maxH0) maxH1 = maxH0;
+					maxH0 = snowH;
+				}
+				else if (maxH1 < snowH) maxH1 = snowH;
+
+				if (maxH0 < commonH) {
+					if (maxH1 < maxH0) maxH1 = maxH0;
+					maxH0 = commonH;
+				}
+				else if (maxH1 < commonH) maxH1 = commonH;
+
+				float tmp = maxH0;
+				maxH0 = max(maxH0, maxH1);
+				maxH1 = min(tmp, maxH1);
+			}
+
+			Material Height2Material(float rockH, float gravelH, float dirtH, float treesH, float grassH, float snowH, float commonH, float maxH) {
+				if (maxH == treesH) return Trees(WSGT.a);
+				else if (maxH == snowH) return Snow(WSGT.y);
+				else if (maxH == gravelH) return Gravel(DGR.y, wetness, gravelH);
+				else if (maxH == grassH) return Grass(WSGT.z, wetness, grassH);
+				else if (maxH == dirtH) return Dirt(DGR.x, wetness, dirtH);
+				else if (maxH == rockH || maxH == commonH) return Rock(DGR.z, wetness, rockH, commonH);
+
+				Material m;
+				return m;
+			}
+
 			float4 frag(v2f _input) : COLOR
 			{
 				v2f input = _input;
@@ -1185,6 +1492,10 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				//			float4 worldSpacePosition : TEXCOORD2;
 
+			Material defaultMat;
+			defaultMat.Albedo = float4(0, 0, 0, 0);
+			defaultMat.Normal = float3(0, 0, 1);
+			defaultMat.Roughness = 0;
 
 				float3 Tangent = normalize(input.tangent);
 				float3 Biangent = normalize(input.bitangent);
@@ -1197,6 +1508,11 @@ Shader "Custom/customTerrainShader_hlsl" {
 				UV = input.uv;// +(0.1*Normal.xz);//*0.1f;
 
 				satellite = tex2D(_Sat, input.uv);
+
+				Material satmat;
+				satmat.Albedo = satellite;
+				satmat.Roughness = 1;
+				satmat.Normal = float3(0, 0, 1);
 
 				float ns = 0.13;
 				if (_enableNormalMap) {
@@ -1240,17 +1556,11 @@ Shader "Custom/customTerrainShader_hlsl" {
 						}
 					}
 
-					LOD = saturate((lerp(0, 1.0, 200.0 / Depth)));
-
-					DetailMaterialWeight = 1;//saturate((pow(LOD + 0.1, 2) - 0.15) / 0.85);
-
 					Noise = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 0)));
-
 					Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 11)));
 
-
-					float4 DGR = tex2D(_ClassesDGR, input.uv);// +float4(Noise_Classes.xy, 0, 0);
-					float4 WSGT = tex2D(_ClassesWSGT, input.uv);// +float4(0, 0, Noise_Classes.w, 0);
+					DGR = tex2D(_ClassesDGR, input.uv);// +float4(Noise_Classes.xy, 0, 0);
+					WSGT = tex2D(_ClassesWSGT, input.uv);// +float4(0, 0, Noise_Classes.w, 0);
 
 					WSGT.a = (1.0 - WSGT.a);
 
@@ -1269,27 +1579,18 @@ Shader "Custom/customTerrainShader_hlsl" {
 					DGR /= sum;
 					WSGT /= sum;
 
-					//return float4(Normal, 1);
-
 					if (_enableNoise == 1) {
 						input.uv += _noiseStrength * Noise.xy;
 					}
 
-					/*
-					if (WSGT.r == 1) return float4(1, 0, 0, 1);
-					else if (WSGT.g == 1) return float4(0, 1, 0, 1);
-					else if (WSGT.b == 1) return float4(0, 0, 1, 1);
-					else if (WSGT.a == 1) return float4(1, 1, 1, 1);
-
-					else return float4(0, 0, 0, 0);
-					*/
 					float4 Color = float4(0, 0, 0, 1.0);
 
 					if (Depth < _LODDistance3) {
-						float wetness = pow(saturate(5.0*WSGT.y + 1.2*(WSGT.x > 0.5 ? 0 : WSGT.x)), 1.5);
+						wetness = pow(saturate(5.0*WSGT.y + 1.2*(WSGT.x > 0.5 ? 0 : WSGT.x)), 1.5);
 
-						float4 ColorH = float4(0, 0, 0, 0);
-						float4 ColorB = float4 (0, 0, 0, 0);
+						float4 ColorH = float4(0,0,0,0);
+						float4 ColorB = float4(0, 0, 0, 0);
+						Material MaterialB;
 
 						if (Depth < _LODDistance2) {
 							float waterH = WSGT.x;
@@ -1336,82 +1637,98 @@ Shader "Custom/customTerrainShader_hlsl" {
 								commonH = CommonH(max(DGR.y, max(DGR.x, WSGT.z)));
 							}
 
+							float maxH0;
+							float maxH1;
 
-							float maxH = max(rockH, max(gravelH, max(dirtH, max(treesH, max(grassH, max(snowH, commonH))))));
-							//return maxH;
-							if (maxH == treesH) ColorH = Trees(input, WSGT.a);
-							else if (maxH == snowH) ColorH = Snow(input, WSGT.y);
-							else if (maxH == gravelH) ColorH = Gravel(input, DGR.y, wetness, gravelH);
-							else if (maxH == grassH) ColorH = Grass(input, WSGT.z, wetness, grassH);
-							else if (maxH == dirtH) ColorH = Dirt(input, DGR.x, wetness, dirtH);
-							else if (maxH == rockH || maxH == commonH) ColorH = Rock(input, DGR.z, wetness, rockH, commonH);
+							findMaxH(rockH, gravelH, dirtH, treesH, grassH, snowH, commonH, maxH0, maxH1);
 
-							if (waterH > maxH) ColorH = lerp(ColorH, Water(input), sqrt(saturate(waterH - 0.5) / 0.5));
+							float heightBlend = 1.0*(Depth / _LODDistance2);
+
+							Material MaterialH;
+
+							if (maxH1 == 0 || maxH0 - maxH1 >= heightBlend) MaterialH = Height2Material(rockH, gravelH, dirtH, treesH, grassH, snowH, commonH, maxH0);
+
+							else {
+								Material MaterialH0 = Height2Material(rockH, gravelH, dirtH, treesH, grassH, snowH, commonH, maxH0);
+								Material MaterialH1 = Height2Material(rockH, gravelH, dirtH, treesH, grassH, snowH, commonH, maxH1);
+
+								MaterialH = lerpMaterial(MaterialH0, MaterialH1, 0.5*pow(saturate(1 - (maxH0 - maxH1) / heightBlend), 2));
+							}
+
+							ColorH = microfacet(MaterialH);
+
+							if (waterH > maxH0) ColorH = lerp(ColorH, Water(input), sqrt(saturate(waterH - 0.5) / 0.5));
 						}
 
 						if (Depth >= _LODDistance2 * (1 - blendSize)) {
 							float4 water = float4(0, 0, 0, 0);
-							float4 snow = float4(0, 0, 0, 0);
-							float4 grass = float4(0, 0, 0, 0);
-							float4 trees = float4(0, 0, 0, 0);
-							float4 dirt = float4(0, 0, 0, 0);
-							float4 gravel = float4(0, 0, 0, 0);
-							float4 rock = float4(0, 0, 0, 0);
+							Material snow = defaultMat;
+							Material grass = defaultMat;
+							Material trees = defaultMat;
+							Material dirt = defaultMat;
+							Material gravel = defaultMat;
+							Material rock = defaultMat;
 
-							//Water
-							if (WSGT.x > 0)
-							{
-								water = Water(input);
-							}
 							//Snow
 							if (WSGT.y > 0)
 							{
-								snow = Snow(input, WSGT.y);
+								snow = Snow(WSGT.y);
 							}
 							//Grass
 							if (WSGT.z > 0)
 							{
-								grass = Grass(input, WSGT.z, wetness, 0);
+								grass = Grass(WSGT.z, wetness, 0);
 							}
 							//Trees
 							if (WSGT.a > 0)
 							{
-								trees = Trees(input, WSGT.a);
+								trees = Trees(WSGT.a);
 							}
 							//Dirt
 							if (DGR.x > 0)
 							{
-								dirt = Dirt(input, DGR.x, wetness, 0);
+								dirt = Dirt(DGR.x, wetness, 0);
 							}
 							//Gravel
 							if (DGR.y > 0)
 							{
-								gravel = Gravel(input, DGR.y, wetness, 0);
+								gravel = Gravel(DGR.y, wetness, 0);
 							}
 							//Rock
 							if (DGR.z > 0)
 							{
-								rock = Rock(input, DGR.z, wetness, 1, 0);
+								rock = Rock(DGR.z, wetness, 1, 0);
 							}
 
+							MaterialB.Albedo = snow.Albedo * WSGT.y + grass.Albedo * WSGT.z + trees.Albedo * WSGT.a + dirt.Albedo * DGR.x + gravel.Albedo * DGR.y + rock.Albedo * DGR.z;
+							MaterialB.Roughness = snow.Roughness * WSGT.y + grass.Roughness * WSGT.z + trees.Roughness * WSGT.a + dirt.Roughness * DGR.x + gravel.Roughness * DGR.y + rock.Roughness * DGR.z;
+							MaterialB.Normal = normalize(snow.Normal * WSGT.y + grass.Normal * WSGT.z + trees.Normal * WSGT.a + dirt.Normal * DGR.x + gravel.Normal * DGR.y + rock.Normal * DGR.z);
+							
+							ColorB = microfacet(MaterialB);
 
-							ColorB = float4(rock.rgb*DGR.z + gravel.rgb*DGR.y + dirt.rgb*DGR.x + trees.rgb*WSGT.w + grass.rgb*WSGT.z + snow.rgb*WSGT.y + water.rgb*WSGT.x, 1.0);
+							//Water
+							if (WSGT.x > 0)
+							{
+								ColorB = ColorB + float4(Water(input).rgb * WSGT.x, 1.0);
+							}
 						}
 
 						if (Depth < _LODDistance2 && Depth >= _LODDistance2 * (1 - blendSize))
-							Color = lerp(ColorH, ColorB, (Depth - _LODDistance2 * (1 - blendSize)) / (_LODDistance2*blendSize));
+							Color = lerp(ColorH, ColorB, saturate((Depth - _LODDistance2 * (1 - blendSize)) / (_LODDistance2*blendSize)));
 						else if (Depth < _LODDistance2)
 							Color = ColorH;
-						else Color = ColorB;
+						else
+							Color = ColorB;
 
 
 						if (Depth >= _LODDistance3 * (1 - blendSize)) {
-							Color = lerp(Color, microfacet(input, satellite, float3(0, 0, 1), 1), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
+							Color = lerp(Color, microfacet(satmat), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
 						}
+
 
 					}
 					else if (Depth < _LODDistance4) {
-						Color = microfacet(input, satellite, float3(0, 0, 1), 1);
+						Color = microfacet(satmat);
 
 						if (Depth >= _LODDistance4 * (1 - blendSize)) {
 							Color = lerp(Color, satellite, (Depth - _LODDistance4 * (1 - blendSize)) / (_LODDistance4*blendSize));
@@ -1425,7 +1742,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 				}
 				else
 				{
-					return microfacet(input, satellite, float3(0, 0, 1), 1);
+					return satellite;
 				}
 
 			}
