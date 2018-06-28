@@ -1302,21 +1302,21 @@ MonoBehaviour:
   GrassLargeUVMultiply: 19
   GrassDetailStrength: 1
   GrassHeightStrength: 2
-  GrassHeightOffset: 0.18
+  GrassHeightOffset: 0.366
   CommonNormaDetailStrength: 1
   CommonNormalDetails: {fileID: 2800000, guid: a42df9055cddd504bbd374e8cddf846f, type: 3}
   CommonHeightDetails: {fileID: 2800000, guid: 084af1617696bd34e91ab00c8a4e4951, type: 3}
   CommonDetailUVMultiply: 203.75
   CommonDetailStrength: 1
   CommonDetailHeightStrength: 2
-  CommonDetailHeightOffset: -0.57
+  CommonDetailHeightOffset: -0.608
   SlopeModifierEnabled: 1
-  SlopeModifierThreshold: 0.85
+  SlopeModifierThreshold: 0.88
   SlopeModifierStrength: 10
   SlopeModifierDebug: 0
-  lodDistance0: 10
-  lodDistance1: 75
-  lodDistance2: 50
+  lodDistance0: 20
+  lodDistance1: 85
+  lodDistance2: 75
   lodDistance3: 1000
   lodDistance4: 5000
   lodDebug: 0
