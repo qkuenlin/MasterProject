@@ -340,8 +340,16 @@ public class MaterialManager : MonoBehaviour
                 float Weight2 = 1.0f;
                 float Weight3 = 1.0f;
 
-                float Frequency = 20.0f;
-                float Lacunarity = 2.0f;
+                float Frequency0 = 20.0f;
+                float Frequency1 = 20.0f;
+                float Frequency2 = 20.0f;
+                float Frequency3 = 2.0f;
+
+                float Lacunarity0 = 2.0f;
+                float Lacunarity1 = 2.0f;
+                float Lacunarity2 = 2.0f;
+                float Lacunarity3 = 8.0f;
+
                 float Gain = 1.0f;
                 float sample0 = 0;
                 float sample1 = 0;
@@ -350,31 +358,35 @@ public class MaterialManager : MonoBehaviour
 
                 for (int i = 0; i < 8; i++)
                 {
-                    xCoord = (offsetX.x + (1.0f * x) / (1.0f * size)) * Frequency;
-                    yCoord = (offsetY.x + (1.0f * y) / (1.0f * size)) * Frequency;
+                    xCoord = (offsetX.x + (1.0f * x) / (1.0f * size)) * Frequency0;
+                    yCoord = (offsetY.x + (1.0f * y) / (1.0f * size)) * Frequency0;
                     float tmp = Weight0 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
                     Weight0 = tmp * Gain;
                     sample0 += tmp;
 
-                    xCoord = (offsetX.y + (1.0f * x) / (1.0f * size)) * Frequency;
-                    yCoord = (offsetY.y + (1.0f * y) / (1.0f * size)) * Frequency;
+                    xCoord = (offsetX.y + (1.0f * x) / (1.0f * size)) * Frequency1;
+                    yCoord = (offsetY.y + (1.0f * y) / (1.0f * size)) * Frequency1;
                     tmp = Weight1 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
                     Weight1 = tmp * Gain;
                     sample1 += tmp;
 
-                    xCoord = (offsetX.z + (1.0f * x) / (1.0f * size)) * Frequency;
-                    yCoord = (offsetY.z + (1.0f * y) / (1.0f * size)) * Frequency;
+                    xCoord = (offsetX.z + (1.0f * x) / (1.0f * size)) * Frequency2;
+                    yCoord = (offsetY.z + (1.0f * y) / (1.0f * size)) * Frequency2;
                     tmp = Weight2 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
                     Weight2 = tmp * Gain;
                     sample2 += tmp;
 
-                    xCoord = (offsetX.w + (1.0f * x) / (1.0f * size)) * Frequency;
-                    yCoord = (offsetY.w + (1.0f * y) / (1.0f * size)) * Frequency;
+                    xCoord = (offsetX.w + (1.0f * x) / (1.0f * size)) * Frequency3;
+                    yCoord = (offsetY.w + (1.0f * y) / (1.0f * size)) * Frequency3;
                     tmp = Weight3 * Mathf.Pow(Mathf.PerlinNoise(xCoord, yCoord), 2);
                     Weight3 = tmp * Gain;
                     sample3 += tmp;
 
-                    Frequency *= Lacunarity;
+                    Frequency0 *= Lacunarity0;
+                    Frequency1 *= Lacunarity1;
+                    Frequency2 *= Lacunarity2;
+                    Frequency3 *= Lacunarity3;
+
                 }
 
                 Noise1[y * size + x] = new Color(sample0, sample1, sample2, sample3);

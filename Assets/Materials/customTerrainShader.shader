@@ -1534,10 +1534,10 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				//			float4 worldSpacePosition : TEXCOORD2;
 
-			Material defaultMat;
-			defaultMat.Albedo = float4(0, 0, 0, 0);
-			defaultMat.Normal = float3(0, 0, 1);
-			defaultMat.Roughness = 0;
+				Material defaultMat;
+				defaultMat.Albedo = float4(0, 0, 0, 0);
+				defaultMat.Normal = float3(0, 0, 1);
+				defaultMat.Roughness = 0;
 
 				float3 Tangent = normalize(input.tangent);
 				float3 Biangent = normalize(input.bitangent);
@@ -1602,10 +1602,23 @@ Shader "Custom/customTerrainShader_hlsl" {
 					}
 
 					Noise = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 0)));
-					Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 11)));
+					Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 1)));
+
+					//return Noise_Classes.w;
+
+					/*
+					if (_enableNoise == 1) {
+						input.uv += _noiseStrength * Noise.xy;
+					}
+					*/
 
 					DGR = tex2D(_ClassesDGR, input.uv);// +float4(Noise_Classes.xy, 0, 0);
-					WSGT = tex2D(_ClassesWSGT, input.uv);// +float4(0, 0, Noise_Classes.w, 0);
+					WSGT = tex2D(_ClassesWSGT, input.uv);
+
+					if (_enableNoise == 1) {
+						WSGT += float4(0, 0, Noise_Classes.w, 0);
+					}
+
 
 					WSGT.a = (1.0 - WSGT.a);
 
@@ -1623,15 +1636,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 					float sum = DGR.x + DGR.y + DGR.z + WSGT.x + WSGT.y + WSGT.z + WSGT.w;
 					DGR /= sum;
 					WSGT /= sum;
-
-					if (_enableNoise == 1) {
-						input.uv += _noiseStrength * Noise.xy;
-					}
-
-					/*
-					float h = RockH(DGR.z);
-					return microfacet(Rock(DGR.z, 0, 1, 0));
-					*/
 
 					float4 Color = float4(0, 0, 0, 1.0);
 
