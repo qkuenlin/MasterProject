@@ -15,6 +15,8 @@ public class MaterialManagerEditor : Editor
     [SerializeField]
     private bool _GrassFoldout = true;
     [SerializeField]
+    private bool _ForestFoldout = true;
+    [SerializeField]
     private bool _GlobalFoldout = true;
     [SerializeField]
     private bool _NoiseFoldout = true;
@@ -67,7 +69,7 @@ public class MaterialManagerEditor : Editor
                     myScript.GrassDebug = EditorGUILayout.ColorField("Grass", myScript.GrassDebug);
                     myScript.DirtDebug = EditorGUILayout.ColorField("Dirt", myScript.DirtDebug);
                     myScript.WaterDebug = EditorGUILayout.ColorField("Water", myScript.WaterDebug);
-                    myScript.TreesDebug = EditorGUILayout.ColorField("Forest", myScript.TreesDebug);
+                    myScript.ForestDebug = EditorGUILayout.ColorField("Forest", myScript.ForestDebug);
 
                 }
 
@@ -827,6 +829,86 @@ public class MaterialManagerEditor : Editor
                     GUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("Offset");
                     myScript.GrassHeightOffset = EditorGUILayout.Slider(myScript.GrassHeightOffset, -1.0f, 1.0f);
+                    GUILayout.EndHorizontal();
+                    EditorGUI.indentLevel--;
+                }
+
+
+
+                EditorGUI.indentLevel--;
+            }
+
+            // Forest MATERIAL OPTIONS
+            _ForestFoldout = EditorGUILayout.Foldout(_ForestFoldout, "Forest Material", "Foldout");
+            if (_ForestFoldout)
+            {
+                EditorGUI.indentLevel++;
+
+                // Large Textures
+                EditorGUILayout.LabelField("Large Textures", style);
+                {
+                    EditorGUI.indentLevel++;
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("UV Multiplier");
+                    myScript.ForestLargeUVMultiply = EditorGUILayout.FloatField(myScript.ForestLargeUVMultiply);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Albedo");
+                    myScript.ForestColorLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.ForestColorLarge, typeof(Texture2D), false);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Roughness");
+                    myScript.ForestRoughnessLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.ForestRoughnessLarge, typeof(Texture2D), false);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Height");
+                    myScript.ForestHeightLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.ForestHeightLarge, typeof(Texture2D), false);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Normal");
+                    myScript.ForestNormalLarge = (Texture2D)EditorGUILayout.ObjectField(myScript.ForestNormalLarge, typeof(Texture2D), false);
+                    GUILayout.EndHorizontal();
+                    EditorGUI.indentLevel++;
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Strength");
+                    myScript.ForestNormaLargeStrength = EditorGUILayout.Slider(myScript.ForestNormaLargeStrength, 0.0f, 1.0f);
+                    GUILayout.EndHorizontal();
+                    EditorGUI.indentLevel--;
+
+                    EditorGUI.indentLevel--;
+                }
+
+                EditorGUILayout.LabelField("Roughness Override", style);
+                {
+                    EditorGUI.indentLevel++;
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Roughness");
+                    myScript.ForestRoughnessModifier = EditorGUILayout.Slider(myScript.ForestRoughnessModifier, 0.0f, 1.0f);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Strength");
+                    myScript.ForestRoughnessModifierStrength = EditorGUILayout.Slider(myScript.ForestRoughnessModifierStrength, 0.0f, 1.0f);
+                    GUILayout.EndHorizontal();
+                    EditorGUI.indentLevel--;
+                }
+
+                EditorGUILayout.LabelField("Height Control", style);
+                {
+                    EditorGUI.indentLevel++;
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Strength");
+                    myScript.ForestHeightStrength = EditorGUILayout.Slider(myScript.ForestHeightStrength, 0.0f, 2.0f);
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Offset");
+                    myScript.ForestHeightOffset = EditorGUILayout.Slider(myScript.ForestHeightOffset, -1.0f, 1.0f);
                     GUILayout.EndHorizontal();
                     EditorGUI.indentLevel--;
                 }

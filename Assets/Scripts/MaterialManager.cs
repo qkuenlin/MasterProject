@@ -234,6 +234,27 @@ public class MaterialManager : MonoBehaviour
     public float CommonDetailHeightOffset;
 
     [SerializeField]
+    public float ForestNormaLargeStrength;
+    [SerializeField]
+    public float ForestRoughnessModifier;
+    [SerializeField]
+    public float ForestRoughnessModifierStrength;
+    [SerializeField]
+    public Texture2D ForestColorLarge;
+    [SerializeField]
+    public Texture2D ForestRoughnessLarge;
+    [SerializeField]
+    public Texture2D ForestNormalLarge;
+    [SerializeField]
+    public Texture2D ForestHeightLarge;
+    [SerializeField]
+    public float ForestLargeUVMultiply;
+    [SerializeField]
+    public float ForestHeightStrength;
+    [SerializeField]
+    public float ForestHeightOffset;
+
+    [SerializeField]
     public bool SlopeModifierEnabled;
     [SerializeField]
     public float SlopeModifierThreshold;
@@ -271,7 +292,7 @@ public class MaterialManager : MonoBehaviour
     [SerializeField]
     public Color WaterDebug;
     [SerializeField]
-    public Color TreesDebug;
+    public Color ForestDebug;
 
     [SerializeField]
     public ReflectionProbe reflectionProbe;
@@ -285,12 +306,15 @@ public class MaterialManager : MonoBehaviour
     private int N_NOISE = 2;
 
     private Texture2DArray HeightTextures;
+    private Texture2DArray NormalTextures;
+
     private bool _first;
     // Use this for initialization
     void Start()
     {
-        Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 18, TextureFormat.ARGB32, true);
-        HeightTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 5 * 2 + 1 + N_NOISE, TextureFormat.RGBAFloat, true);
+        Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 20, TextureFormat.ARGB32, true);
+        HeightTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 6 * 2 + 1 + N_NOISE, TextureFormat.RGBAFloat, true);
+        NormalTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 6 * 2, TextureFormat.RGBAFloat, true);
         // reflectionCubeMap = new Cubemap(128, TextureFormat.RGB24, true);        
 
         foreach (Material m in materials)
@@ -458,6 +482,12 @@ public class MaterialManager : MonoBehaviour
 
                 if (GrassRoughnessDetails != null) Textures.SetPixels(GrassRoughnessDetails.GetPixels(), 14 + 3);
                 yield return new WaitForSeconds(0.05f);
+
+                if (ForestColorLarge != null) Textures.SetPixels(ForestColorLarge.GetPixels(), 18 + 0);
+                yield return new WaitForSeconds(0.05f);
+
+                if (ForestRoughnessLarge != null) Textures.SetPixels(ForestRoughnessLarge.GetPixels(), 18 + 1);
+                yield return new WaitForSeconds(0.05f);
                 Textures.Apply();
 
                 if (RockHeightLarge != null) HeightTextures.SetPixels(RockHeightLarge.GetPixels(), 0 + N_NOISE);
@@ -493,37 +523,58 @@ public class MaterialManager : MonoBehaviour
                 if (CommonHeightDetails != null) HeightTextures.SetPixels(CommonHeightDetails.GetPixels(), 10 + N_NOISE);
                 yield return new WaitForSeconds(0.05f);
 
+                if (ForestHeightLarge != null) HeightTextures.SetPixels(ForestHeightLarge.GetPixels(), 11 + N_NOISE);
+                yield return new WaitForSeconds(0.05f);
+
                 HeightTextures.SetPixels(Noise0, 0);
                 HeightTextures.SetPixels(Noise1, 1);
 
                 HeightTextures.Apply();
 
+                if (RockNormalLarge != null) NormalTextures.SetPixels(RockNormalLarge.GetPixels(), 0);
+                yield return new WaitForSeconds(0.05f);
+
+                if (RockNormalDetails != null) NormalTextures.SetPixels(RockNormalDetails.GetPixels(), 1);
+                yield return new WaitForSeconds(0.05f);
+
+                if (SnowNormalLarge != null) NormalTextures.SetPixels(SnowNormalLarge.GetPixels(), 2);
+                yield return new WaitForSeconds(0.05f);
+
+                if (SnowNormalDetails != null) NormalTextures.SetPixels(SnowNormalDetails.GetPixels(), 3);
+                yield return new WaitForSeconds(0.05f);
+
+                if (GravelNormalLarge != null) NormalTextures.SetPixels(GravelNormalLarge.GetPixels(), 4);
+                yield return new WaitForSeconds(0.05f);
+
+                if (GravelNormalDetails != null) NormalTextures.SetPixels(GravelNormalDetails.GetPixels(), 5);
+                yield return new WaitForSeconds(0.05f);
+
+                if (DirtNormalLarge != null) NormalTextures.SetPixels(DirtNormalLarge.GetPixels(), 6);
+                yield return new WaitForSeconds(0.05f);
+
+                if (DirtNormalDetails != null) NormalTextures.SetPixels(DirtNormalDetails.GetPixels(), 7);
+                yield return new WaitForSeconds(0.05f);
+
+                if (GrassNormalLarge != null) NormalTextures.SetPixels(GrassNormalLarge.GetPixels(), 8);
+                yield return new WaitForSeconds(0.05f);
+
+                if (GrassNormalDetails != null) NormalTextures.SetPixels(GrassNormalDetails.GetPixels(), 9);
+                yield return new WaitForSeconds(0.05f);
+
+                if (CommonNormalDetails != null) NormalTextures.SetPixels(CommonNormalDetails.GetPixels(), 10);
+                yield return new WaitForSeconds(0.05f);
+
+                if (ForestNormalLarge != null) NormalTextures.SetPixels(ForestNormalLarge.GetPixels(), 11);
+                yield return new WaitForSeconds(0.05f);
+
+                NormalTextures.Apply();
+
                 foreach (Material m in materials)
-                {
-                    if (RockNormalDetails != null) m.SetTexture("_RockNormalDetail", RockNormalDetails);
-                    if (RockNormalLarge != null) m.SetTexture("_RockNormalLarge", RockNormalLarge);
-                    m.SetTexture("_Textures", Textures);
-                    yield return new WaitForSeconds(0.05f);
-
-                    if (SnowNormalDetails != null) m.SetTexture("_SnowNormalDetail", SnowNormalDetails);
-                    if (SnowNormalLarge != null) m.SetTexture("_SnowNormalLarge", SnowNormalLarge);
-                    yield return new WaitForSeconds(0.05f);
-
-                    if (GravelNormalDetails != null) m.SetTexture("_GravelNormalDetail", GravelNormalDetails);
-                    if (GravelNormalLarge != null) m.SetTexture("_GravelNormalLarge", GravelNormalLarge);
-                    yield return new WaitForSeconds(0.05f);
-
-                    if (DirtNormalDetails != null) m.SetTexture("_DirtNormalDetail", DirtNormalDetails);
-                    if (DirtNormalLarge != null) m.SetTexture("_DirtNormalLarge", DirtNormalLarge);
-                    yield return new WaitForSeconds(0.05f);
-
-                    if (GrassNormalDetails != null) m.SetTexture("_GrassNormalDetail", GrassNormalDetails);
-                    if (GrassNormalLarge != null) m.SetTexture("_GrassNormalLarge", GrassNormalLarge);
-                    yield return new WaitForSeconds(0.05f);
-
-                    if (CommonNormalDetails != null) m.SetTexture("_CommonNormalDetail", CommonNormalDetails);
-
+                {                    
+                    m.SetTexture("_ColorTextures", Textures);
                     m.SetTexture("_HeightTextures", HeightTextures);
+                    m.SetTexture("_NormalTextures", NormalTextures);
+
                     yield return new WaitForSeconds(0.05f);
                 }
                 yield return new WaitForSeconds(0.5f);
@@ -642,6 +693,13 @@ public class MaterialManager : MonoBehaviour
             m.SetFloat("_GrassHeightStrength", GrassHeightStrength);
             m.SetFloat("_GrassHeightOffset", GrassHeightOffset);
 
+            m.SetFloat("_ForestUVLargeMultiply", ForestLargeUVMultiply);
+            m.SetFloat("_ForestNormalLargeStrength", ForestNormaLargeStrength);
+            m.SetFloat("_ForestRoughnessModifier", ForestRoughnessModifier);
+            m.SetFloat("_ForestRoughnessModifierStrength", ForestRoughnessModifierStrength);
+            m.SetFloat("_ForestHeightStrength", ForestHeightStrength);
+            m.SetFloat("_ForestHeightOffset", ForestHeightOffset);
+
             m.SetFloat("_CommonUVDetailMultiply", CommonDetailUVMultiply);
             m.SetFloat("_CommonNormalDetailStrength", CommonNormaDetailStrength);
             m.SetFloat("_CommonDetailStrength", CommonDetailStrength);
@@ -666,7 +724,7 @@ public class MaterialManager : MonoBehaviour
             m.SetColor("_DirtDebug", DirtDebug);
             m.SetColor("_RockDebug", RockDebug);
             m.SetColor("_WaterlDebug", WaterDebug);
-            m.SetColor("_TreesDebug", TreesDebug);
+            m.SetColor("_ForestDebug", ForestDebug);
             m.SetColor("_SnowDebug", SnowDebug);
 
 
