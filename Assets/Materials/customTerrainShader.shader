@@ -1108,7 +1108,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				float roughness = UNITY_SAMPLE_TEX2DARRAY(_ColorTextures, float3(UV*_ForestUVLargeMultiply, 18 + 1.0)).x;
 
-				float4 albedo = albedoL;//ColorTransfer(satellite, albedoL, albedoLM);
+				float4 albedo = ColorTransfer(satellite, albedoL, albedoLM);
 
 				float3 N = _enableNormalMap ? lerp(float3(0, 0, 1), UnpackNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalTextures, float3(UV*_ForestUVLargeMultiply, 11))), _ForestNormalLargeStrength) : float3(0, 0, 1);
 
@@ -1662,56 +1662,59 @@ Shader "Custom/customTerrainShader_hlsl" {
 					//return microfacet(Forest(1));
 
 					if (Depth < _LODDistance3) {
+						float waterH = WSGT.x;
+						float snowH = 0;
+						float grassH = 0;
+						float forestH = 0;
+						float rockH = 0;
+						float dirtH = 0;
+						float gravelH = 0;
+						float commonH = 0;
+
+						//Snow
+						if (WSGT.y > 0)
+						{
+							snowH = SnowH(WSGT.y);
+						}
+						//Grass
+						if (WSGT.z > 0)
+						{
+							grassH = GrassH(WSGT.z);
+						}
+						//Forest
+						if (WSGT.w > 0)
+						{
+							forestH = ForestH(WSGT.w);
+						}
+						//Dirt
+						if (DGR.x > 0)
+						{
+							dirtH = DirtH(DGR.x);
+						}
+						//Gravel
+						if (DGR.y > 0)
+						{
+							gravelH = GravelH(DGR.y);
+						}
+						//Rock
+						if (DGR.z > 0)
+						{
+							rockH = RockH(DGR.z);
+						}
+
+						if (DGR.y > 0 || DGR.x > 0 || WSGT.z > 0) {
+							commonH = CommonH(max(DGR.y, max(DGR.x, WSGT.z)));
+						}
+
+						satellite = tex2D(_Sat, input.uv);
+
 						wetness = pow(saturate(5.0*WSGT.y + 1.2*(WSGT.x > 0.5 ? 0 : WSGT.x)), 1.5);
 
 						float4 ColorH = float4(0,0,0,0);
 						float4 ColorB = float4(0, 0, 0, 0);
 						Material MaterialB;
 
-						if (Depth < _LODDistance2) {
-							float waterH = WSGT.x;
-							float snowH = 0;
-							float grassH = 0;
-							float forestH = 0;
-							float rockH = 0;
-							float dirtH = 0;
-							float gravelH = 0;
-							float commonH = 0;
-
-							//Snow
-							if (WSGT.y > 0)
-							{
-								snowH = SnowH(WSGT.y);
-							}
-							//Grass
-							if (WSGT.z > 0)
-							{
-								grassH = GrassH(WSGT.z);
-							}
-							//Forest
-							if (WSGT.w > 0)
-							{
-								forestH = ForestH(WSGT.w);
-							}
-							//Dirt
-							if (DGR.x > 0)
-							{
-								dirtH = DirtH(DGR.x);
-							}
-							//Gravel
-							if (DGR.y > 0)
-							{
-								gravelH = GravelH(DGR.y);
-							}
-							//Rock
-							if (DGR.z > 0)
-							{
-								rockH = RockH(DGR.z);
-							}
-
-							if (DGR.y > 0 || DGR.x > 0 || WSGT.z > 0) {
-								commonH = CommonH(max(DGR.y, max(DGR.x, WSGT.z)));
-							}
+						if (Depth < _LODDistance2) {						
 
 							float maxH0;
 							float maxH1;
