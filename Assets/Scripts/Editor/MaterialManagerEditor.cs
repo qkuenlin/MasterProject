@@ -60,6 +60,8 @@ public class MaterialManagerEditor : Editor
                 myScript.HeightBasedMix = EditorGUILayout.Toggle("Height Based Mix", myScript.HeightBasedMix);
                 myScript.Tessellation = EditorGUILayout.Toggle("Tessellation", myScript.Tessellation);
 
+                myScript.Parallax = EditorGUILayout.Toggle("Parallax", myScript.Parallax);
+
                 myScript.materialDebug = EditorGUILayout.Toggle("Debug Material", myScript.materialDebug);
                 if (myScript.materialDebug)
                 {

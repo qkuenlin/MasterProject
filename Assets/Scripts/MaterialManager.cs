@@ -33,6 +33,8 @@ public class MaterialManager : MonoBehaviour
     public float NoiseLumStrength;
 
     [SerializeField]
+    public bool Parallax;
+    [SerializeField]
     public bool Tessellation;
     [SerializeField]
     public bool EnableDetails;
@@ -599,6 +601,7 @@ public class MaterialManager : MonoBehaviour
             {
                 if (m != null)
                     m.SetTexture("_ReflectionCubeMap", reflectionCubeMap);
+                    
             }
 
             yield return new WaitForSeconds(1f);
@@ -610,6 +613,7 @@ public class MaterialManager : MonoBehaviour
     {
         foreach (Material m in materials)
         {
+            m.SetInt("_parallax", Parallax ? 1 : 0);
             m.SetInt("_tesselation", Tessellation ? 1 : 0);
             m.SetInt("_enableNormalMap", EnableNormalMaps ? 1 : 0);
             m.SetInt("_enableDetails", EnableDetails ? 1 : 0);
@@ -726,9 +730,6 @@ public class MaterialManager : MonoBehaviour
             m.SetColor("_WaterlDebug", WaterDebug);
             m.SetColor("_ForestDebug", ForestDebug);
             m.SetColor("_SnowDebug", SnowDebug);
-
-
-
         }
 
         RaycastHit info;
