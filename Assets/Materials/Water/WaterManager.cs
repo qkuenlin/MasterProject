@@ -251,12 +251,6 @@ public class WaterManager : MonoBehaviour
         wavesTexture.Apply();
         float var = 4.0f;
         amplitudeMax = 2.0f * var * sqrt(heightVariance);
-
-        byte[] tex = wavesTexture.EncodeToPNG();
-        FileStream file = File.Open(@"waves.png", FileMode.Create);
-        BinaryWriter binary = new BinaryWriter(file);
-        binary.Write(tex);
-        file.Close();
     }
 
     float sqr(float x)

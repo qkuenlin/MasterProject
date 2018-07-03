@@ -183,11 +183,12 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float2 u : TEXCOORD6;
 				float3 dPdu : TEXCOORD7;
 				float3 dPdv : TEXCOORD8;
-				float2 sigmaSq : TEXCOORD9;
-				float3 P : TEXCOORD10;
-				float lod : TEXCOORD11;
+				float dP : TEXCOORD9;
+				float2 sigmaSq : TEXCOORD10;
+				float3 P : TEXCOORD11;
+				float lod : TEXCOORD12;
 
-				SHADOW_COORDS(12)
+				SHADOW_COORDS(13)
 			};
 
 			uint ReverseBits32(uint bits)
@@ -287,7 +288,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 					V = normalize(V);
 
 					o.u =  mul(_worldToWind, float4(v.vertex.xz , 0, 0) ).xy;
-					o.lod = atan(_lods.y / t) * _lods.x;// *dot(V, wNormal);
+					o.lod = atan(_lods.y / t) * _lods.x * sqrt(dot(V, wNormal));
 
 					float3 dPdu = float3(1.0, 0.0, 0.0);
 					float3 dPdv = float3(0.0, 1.0, 0.0);
@@ -300,7 +301,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 					for (float i = iMin; i < _nbWaves; i += 1.0f)
 					{
 						float4 wt = tex2Dlod(_wavesSampler, float4((i + 0.5) / _nbWaves, 0,0,0));
-						float phase = wt.y * _Time.x - dot(wt.zw, o.u);
+						float phase = wt.y * _Time.y/5 -dot(wt.zw, o.u);
 						float s = sin(phase);
 						float c = cos(phase);
 						float overk = 9.81f / (wt.y * wt.y);
@@ -322,12 +323,12 @@ Shader "Custom/customTerrainShader_hlsl" {
 					o.P = v.vertex.xyz + dP.xzy;
 					
 					
-					//if (tex2Dlod(_ClassesWSGT, float4(o.uv, 0, 1)).x >= 1) {
+					if (tex2Dlod(_ClassesWSGT, float4(o.uv, 0, 1)).x >= 1) {
 						o.pos = UnityObjectToClipPos(float4(o.P.x, o.P.y, o.P.z, 1.0));
 						o.worldSpacePosition = mul(unity_ObjectToWorld, float4(o.P.x, o.P.y, o.P.z, 1.0));
-					//}					
+					}					
 					
-
+					o.dP = dP.z;
 					o.dPdu = dPdu;
 					o.dPdv = dPdv;
 					o.sigmaSq = sigmaSq;
@@ -492,10 +493,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 			const vec3 betaMSca = vec3(3e-3) / SCALE;
 			const vec3 betaMEx = betaMSca / 0.9;
 			const float mieG = 0.65;*/
-
-			float g = 9.81;
-
-			float M_PI = 3.141592657;
 
 			float3 earthPos = float3(0.0, 0.0, 6360010.0);
 
@@ -1422,8 +1419,33 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 			float Lambda(float cosTheta, float sigmaSq) {
 				float v = cosTheta / sqrt((1.0 - cosTheta * cosTheta) * (2.0 * sigmaSq));
-				return max(0.0, (exp(-v * v) - v * sqrt(M_PI) * erfc(v)) / (2.0 * v * sqrt(M_PI)));
-				//return (exp(-v * v)) / (2.0 * v * sqrt(M_PI)); // approximate, faster formula
+				return max(0.0, (exp(-v * v) - v * sqrt(3.141592657) * erfc(v)) / (2.0 * v * sqrt(3.141592657)));
+				//return (exp(-v * v)) / (2.0 * v * sqrt(3.141592657)); // approximate, faster formula
+			}
+
+			// V, N, Tx, Ty in world space
+			float2 U(float2 zeta, float3 V, float3 N, float3 Tx, float3 Ty) {
+				float3 f = normalize(float3(-zeta, 1.0)); // tangent space
+				float3 F = f.x * Tx + f.y * Ty + f.z * N; // world space
+				float3 R = 2.0 * dot(F, V) * F - V;
+				return R.xy / (1.0 + R.z);
+			}
+
+			// V, N, Tx, Ty in world space;
+			float3 meanSkyRadiance(float3 V, float3 N, float3 Tx, float3 Ty, float2 sigmaSq) {
+				float4 result;
+
+				const float eps = 0.001;
+				float3 wo0 = reflect(-V, N);
+
+				float2 u0 = U(float2(0,0), V, N, Tx, Ty);
+
+				float3 dux = float3(2.0 * (U(float2(eps, 0.0), V, N, Tx, Ty) - u0) / eps * sqrt(sigmaSq.x),0);
+				float3 duy = float3(2.0 * (U(float2(0.0, eps), V, N, Tx, Ty) - u0) / eps * sqrt(sigmaSq.y),0);
+
+				result = texCUBEgrad(_ReflectionCubeMap, wo0.xzy, dux.xzy * (0.5 / 1.1), duy.xzy * (0.5 / 1.1));
+
+				return result.rgb;
 			}
 
 			// L, V, N, Tx, Ty in world space
@@ -1439,7 +1461,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float zV = dot(V, N); // cos of receiver zenith angle
 				float zH2 = zH * zH;
 
-				float p = exp(-0.5 * (zetax * zetax / sigmaSq.x + zetay * zetay / sigmaSq.y)) / (2.0 * M_PI * sqrt(sigmaSq.x * sigmaSq.y));
+				float p = exp(-0.5 * (zetax * zetax / sigmaSq.x + zetay * zetay / sigmaSq.y)) / (2.0 * 3.141592657 * sqrt(sigmaSq.x * sigmaSq.y));
 
 				float tanV = atan2(dot(V, Ty), dot(V, Tx));
 				float cosV2 = 1.0 / (1.0 + tanV * tanV);
@@ -1457,6 +1479,17 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return fresnel * p / ((1.0 + Lambda(zL, sigmaL2) + Lambda(zV, sigmaV2)) * zV * zH2 * zH2 * 4.0);
 			}
 
+			float3 Esky(float sH) {
+				if (sH < -0.15) return float3(0, 0, 0);				
+				if (sH < 0) return lerp(float3(0, 0, 0), float3(0.40, 0.42, 0.39), (sH + 0.15) / 0.15);
+				if (sH == 0) return float3(0.40, 0.42, 0.39);
+				if (sH < 0.1) return lerp(float3(0.40, 0.42, 0.39), float3(0.6, 0.75, 0.83), sH / 0.1);
+				if (sH == 0.1) return float3(0.6, 0.75, 0.83);
+				if (sH < 1) return lerp(float3(0.6, 0.75, 0.83), float3(0.72, 0.92, 1), (sH - 0.1) / 0.9);
+
+				else return float3(0.72, 0.92, 1);
+			}
+
 			float4 Water(v2f input, float weight) {
 				if (_MaterialDebug == 1) return _WaterDebug;
 				Material shore;
@@ -1471,21 +1504,19 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float iMAX = min(ceil((log2(_nyquistMax * Depth / input.lod) - _lods.z) * _lods.w), _nbWaves - 1.0);
 				float iMax = floor((log2(_nyquistMin * Depth / input.lod) - _lods.z) * _lods.w);
 				float iMin = max(0.0, floor((log2(_nyquistMin * _lods.y / input.lod) - _lods.z) * _lods.w));
-
-				//return (iMin) / _nbWaves;
 				
-				float dP = 0;
+				float dP = input.dP;
 
 				[unroll(60)]
 				for (float i = iMin; i <= iMAX; i += 1.0) {
 					float4 wt = tex2Dlod(_wavesSampler, float4((i + 0.5f) / _nbWaves, 0, 0, 0));
-					float phase = wt.y * _Time.x - dot(wt.zw, input.u);
+					float phase = wt.y * _Time.y/5 - dot(wt.zw, input.u);
 					float s = sin(phase);
 					float c = cos(phase);
-					float overk = g / (wt.y * wt.y);
+					float overk = 9.81 / (wt.y * wt.y);
 
-					float wp = smoothstep(_nyquistMin, _nyquistMax, (2.0 * 3.151592) * overk / _lods.y);
-					float wn = smoothstep(_nyquistMin, _nyquistMax, (2.0 * 3.141592) * overk / _lods.y * input.lod);
+					float wp = smoothstep(_nyquistMin, _nyquistMax, (2.0 *  3.141592657) * overk / _lods.y);
+					float wn = smoothstep(_nyquistMin, _nyquistMax, (2.0 *  3.141592657) * overk / _lods.y * input.lod);
 
 					float3 factor = (1.0 - wp) * wn * wt.x * float3(wt.zw * overk, 1.0);
 
@@ -1505,8 +1536,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				float3 windNormal = normalize(cross(dPdu, dPdv));
 
-				float3 N = float3(mul(_windToWorld, float4(windNormal.xy, 0, 0)).xy, windNormal.z);
-				
+				float3 N = float3(mul(_windToWorld, float4(windNormal.xy, 0, 0)).xy, windNormal.z);				
 				
 				if (dot(V.xzy, N) < 0.0) {
 					N = reflect(N, V.xzy); // reflects backfacing normals
@@ -1515,49 +1545,19 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float3 Ty = normalize(cross(N, float3(_windToWorld[0].xy, 0.0)));
 				float3 Tx = cross(Ty, N);
 
+				float fresnel = 0.02 + 0.98 * meanFresnel(V.xzy, N, sigmaSq);
 
+				float3 Lsun = Shadows > 0 ? reflectedSunRadiance(L.xzy, V.xzy, N, Tx, Ty, sigmaSq) * _LightColor0 * Shadows : 0;
 
-				float fresnel = 0.02 + 0.98 * meanFresnel(V, N, sigmaSq);
-				/*
-				float3 Lsun;
-				float3 Esky;
-				float3 extinction;
-				sunRadianceAndSkyIrradiance(_WorldSpaceCameraPos + earthPos, worldSunDir, Lsun, Esky);
-				*/
+				float3 Lsky = fresnel * meanSkyRadiance(V.xzy, N, Tx, Ty, sigmaSq) * saturate(Shadows + 0.25);
 
-				float3 sunContrib = reflectedSunRadiance(L.xzy, V.xzy, N, Tx, Ty, sigmaSq);// *_LightColor0;
+				float3 Lsea = (1 - fresnel) * _WaterColor.rgb * _WaterColor.a * Esky(L.y * saturate(Shadows + 0.1))/ 3.141592657;
 
-				return float4(sunContrib, 1.0);
+				float4 WaterColor = float4(Lsea + Lsky + Lsun, 1.0);
 
-				
-				float D = GGX(N, H, 0.1);//_WaterRoughness);
-
-				fixed4 specular = Shadows > 0 ? Shadows * _LightColor0 * D * fresnel * Geom(N, H, V, L) / (4.0f*dot(V, N)*dot(N, L)) : 0;
-				fixed4 diffuse = _WaterColor * dot(N, L) * _LightColor0;
-				fixed4 ambient = _WaterColor * (float4(0.6, 0.7, 0.95, 1.0) + unity_AmbientGround + unity_AmbientEquator + unity_AmbientSky);
-
-				// INDIRECT ILLUMINATION 
-
-			//	N = float3(0, 1, 0);
-
-				half mip = perceptualRoughnessToMipmapLevel(_WaterRoughness);
-
-				//return texCUBElod(unity_SpecCube0, float4(reflect(-V, N), mip));
-
-				float3 wo0 = reflect(-V, N);
-
-				float4 IndirectLight = Shadows * texCUBElod(_ReflectionCubeMap, float4(wo0, mip));
-
-				float4 Indirect = IndirectLight;//lerp(_WaterColor*IndirectLight, IndirectLight, fresnel(dot(N, V), 1.33f));
-				
-
-				float4 WaterColor = specular + IndirectLight;
-
-				float shoreWeight = min(0, 2 * (0.5 - weight));
+				float shoreWeight = min(0, 2*(0.5 - weight));
 
 				weight += weight >= 1 ? 0 : weight*dP;
-
-				//return weight;
 
 				if (weight < 1) {
 
@@ -1566,7 +1566,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 					ShoreHeight = max(gH, cH);
 
-					if (ShoreHeight < 0.5 + weight * dP) UV = lerp(UV + N.xy*weight*0.0002, UV, pow(saturate(ShoreHeight + 0.3 - dP), 2));
+					if (ShoreHeight < 0.5 + weight * dP) UV = lerp(UV + N.xy*weight*0.0001, UV, pow(saturate(ShoreHeight + 0.3 - dP), 2));
 
 					if (gH > cH) shore = Gravel(pow(1.5*weight, 1.5), gH);
 					else shore = Rock(pow(1.5*weight, 1.5), 0, gH);
@@ -1760,7 +1760,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 						float gravelH = 0;
 						float commonH = 0;
 
-						return Water(input, waterH);
+						//return Water(input, waterH);
 
 						float sum = DGR.x + DGR.y + DGR.z + WSGT.x + WSGT.y + WSGT.z + WSGT.w;
 						DGR /= sum;

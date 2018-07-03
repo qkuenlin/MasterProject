@@ -603,8 +603,6 @@ public class MaterialManager : MonoBehaviour
                     m.SetTexture("_ReflectionCubeMap", reflectionCubeMap);
                     
             }
-
-            yield return new WaitForSeconds(1f);
         }
     }
 

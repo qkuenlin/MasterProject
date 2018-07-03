@@ -144,7 +144,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: e254a546ff175024eba72d031aad49f6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -397
+      value: -401
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: e254a546ff175024eba72d031aad49f6, type: 3}
       propertyPath: m_LocalPosition.z
@@ -291,7 +291,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1678876630}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.52, z: 0}
+  m_LocalPosition: {x: -2961, y: 371, z: -3874}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1278719803}
@@ -1100,11 +1100,11 @@ MonoBehaviour:
   lambdaMax: 30
   v20: 1.5
   amplitude: 0.32
-  nyquistMin: -3
-  nyquistMax: 15
-  waterColor: {r: 0.34117648, g: 0.5294118, b: 0.6509804, a: 1}
+  nyquistMin: 1
+  nyquistMax: 20
+  waterColor: {r: 0.039215688, g: 0.15686275, b: 0.47058824, a: 0.19607843}
   waterRoughness: 0
-  gridSize: 513
+  gridSize: 128
   terrainMaterials:
   - {fileID: 2100000, guid: ca8c043baae742c47bd342ae533126ba, type: 2}
   - {fileID: 2100000, guid: 0e2a122db8f36fe45a4617d8b4310514, type: 2}
