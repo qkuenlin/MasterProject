@@ -618,7 +618,7 @@ public class MaterialManager : MonoBehaviour
             m.SetInt("_enableNormalMap", EnableNormalMaps ? 1 : 0);
             m.SetInt("_enableDetails", EnableDetails ? 1 : 0);
             m.SetInt("_heightBasedMix", HeightBasedMix ? 1 : 0);
-            if(Camera.current != null) m.SetFloat("_SatelliteProportion", SatelliteProportion * Camera.current.pixelWidth);
+            if(Camera.main != null) m.SetFloat("_SatelliteProportion", SatelliteProportion * Camera.main.pixelWidth);
 
             m.SetFloat("_noiseStrength", NoiseUVStrength);
             m.SetInt("_enableNoise", EnableNoiseUV ? 1 : 0);
