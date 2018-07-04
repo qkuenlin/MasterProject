@@ -33,6 +33,8 @@ public class MaterialManager : MonoBehaviour
     public float NoiseLumStrength;
 
     [SerializeField]
+    public bool debug;
+    [SerializeField]
     public bool Parallax;
     [SerializeField]
     public bool Tessellation;
@@ -301,8 +303,6 @@ public class MaterialManager : MonoBehaviour
 
     private Texture2DArray Textures;
 
-    private Texture reflectionCubeMap;
-
     private Color[] Noise0;
     private Color[] Noise1;
     private int N_NOISE = 2;
@@ -311,13 +311,14 @@ public class MaterialManager : MonoBehaviour
     private Texture2DArray NormalTextures;
 
     private bool _first;
+    private bool first;
+
     // Use this for initialization
-    void Start()
+    void Awake()
     {
         Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 20, TextureFormat.ARGB32, true);
         HeightTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 6 * 2 + 1 + N_NOISE, TextureFormat.RGBAFloat, true);
         NormalTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 6 * 2, TextureFormat.RGBAFloat, true);
-        // reflectionCubeMap = new Cubemap(128, TextureFormat.RGB24, true);        
 
         foreach (Material m in materials)
         {
@@ -325,6 +326,7 @@ public class MaterialManager : MonoBehaviour
         }
 
         _first = true;
+        first = true;
         StartCoroutine("TextureUpdate");
         StartCoroutine("RenderReflection");
     }
@@ -572,7 +574,7 @@ public class MaterialManager : MonoBehaviour
                 NormalTextures.Apply();
 
                 foreach (Material m in materials)
-                {                    
+                {
                     m.SetTexture("_ColorTextures", Textures);
                     m.SetTexture("_HeightTextures", HeightTextures);
                     m.SetTexture("_NormalTextures", NormalTextures);
@@ -593,147 +595,142 @@ public class MaterialManager : MonoBehaviour
         while (true)
         {
             int i = reflectionProbe.RenderProbe();
-
             yield return new WaitWhile(() => reflectionProbe.IsFinishedRendering(i));
-            reflectionCubeMap = reflectionProbe.texture;
-
-            foreach (Material m in materials)
-            {
-                if (m != null)
-                    m.SetTexture("_ReflectionCubeMap", reflectionCubeMap);
-                    
-            }
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        foreach (Material m in materials)
+        if (first || debug)
         {
-            m.SetInt("_parallax", Parallax ? 1 : 0);
-            m.SetInt("_tesselation", Tessellation ? 1 : 0);
-            m.SetInt("_enableNormalMap", EnableNormalMaps ? 1 : 0);
-            m.SetInt("_enableDetails", EnableDetails ? 1 : 0);
-            m.SetInt("_heightBasedMix", HeightBasedMix ? 1 : 0);
-            if(Camera.main != null) m.SetFloat("_SatelliteProportion", SatelliteProportion * Camera.main.pixelWidth);
+            first = false;
+            foreach (Material m in materials)
+            {
+                m.SetInt("_parallax", Parallax ? 1 : 0);
+                m.SetInt("_tesselation", Tessellation ? 1 : 0);
+                m.SetInt("_enableNormalMap", EnableNormalMaps ? 1 : 0);
+                m.SetInt("_enableDetails", EnableDetails ? 1 : 0);
+                m.SetInt("_heightBasedMix", HeightBasedMix ? 1 : 0);
+                if (Camera.main != null) m.SetFloat("_SatelliteProportion", SatelliteProportion * Camera.main.pixelWidth);
 
-            m.SetFloat("_noiseStrength", NoiseUVStrength);
-            m.SetInt("_enableNoise", EnableNoiseUV ? 1 : 0);
+                m.SetFloat("_noiseStrength", NoiseUVStrength);
+                m.SetInt("_enableNoise", EnableNoiseUV ? 1 : 0);
 
-            m.SetFloat("_noiseHueStrength", NoiseHueStrength);
-            m.SetInt("_enableNoiseHue", EnableNoiseHue ? 1 : 0);
+                m.SetFloat("_noiseHueStrength", NoiseHueStrength);
+                m.SetInt("_enableNoiseHue", EnableNoiseHue ? 1 : 0);
 
-            m.SetFloat("_noiseLumStrength", NoiseLumStrength);
-            m.SetInt("_enableNoiseLum", EnableNoiseLum ? 1 : 0);
+                m.SetFloat("_noiseLumStrength", NoiseLumStrength);
+                m.SetInt("_enableNoiseLum", EnableNoiseLum ? 1 : 0);
 
-            m.SetColor("_AmbientLightColor", AmbientLightColor);
-            m.SetFloat("_AmbientLightStrength", AmbientLightStrength);
+                m.SetColor("_AmbientLightColor", AmbientLightColor);
+                m.SetFloat("_AmbientLightStrength", AmbientLightStrength);
 
-            m.SetFloat("_RockUVDetailMultiply", RockDetailUVMultiply);
-            m.SetFloat("_RockUVLargeMultiply", RockLargeUVMultiply);
+                m.SetFloat("_RockUVDetailMultiply", RockDetailUVMultiply);
+                m.SetFloat("_RockUVLargeMultiply", RockLargeUVMultiply);
 
-            m.SetFloat("_RockNormalDetailStrength", RockNormaDetailStrength);
-            m.SetFloat("_RockNormalLargeStrength", RockNormaLargeStrength);
+                m.SetFloat("_RockNormalDetailStrength", RockNormaDetailStrength);
+                m.SetFloat("_RockNormalLargeStrength", RockNormaLargeStrength);
 
-            m.SetFloat("_RockRoughnessModifier", RockRoughnessModifier);
-            m.SetFloat("_RockRoughnessModifierStrength", RockRoughnessModifierStrength);
-            m.SetFloat("_RockDetailStrength", RockDetailStrength);
+                m.SetFloat("_RockRoughnessModifier", RockRoughnessModifier);
+                m.SetFloat("_RockRoughnessModifierStrength", RockRoughnessModifierStrength);
+                m.SetFloat("_RockDetailStrength", RockDetailStrength);
 
-            m.SetFloat("_RockHeightStrength", RockHeightStrength);
-            m.SetFloat("_RockHeightOffset", RockHeightOffset);
+                m.SetFloat("_RockHeightStrength", RockHeightStrength);
+                m.SetFloat("_RockHeightOffset", RockHeightOffset);
 
-            m.SetFloat("_SnowUVDetailMultiply", SnowDetailUVMultiply);
-            m.SetFloat("_SnowUVLargeMultiply", SnowLargeUVMultiply);
+                m.SetFloat("_SnowUVDetailMultiply", SnowDetailUVMultiply);
+                m.SetFloat("_SnowUVLargeMultiply", SnowLargeUVMultiply);
 
-            m.SetFloat("_SnowNormalDetailStrength", SnowNormaDetailStrength);
-            m.SetFloat("_SnowNormalLargeStrength", SnowNormaLargeStrength);
+                m.SetFloat("_SnowNormalDetailStrength", SnowNormaDetailStrength);
+                m.SetFloat("_SnowNormalLargeStrength", SnowNormaLargeStrength);
 
-            m.SetFloat("_SnowRoughnessModifier", SnowRoughnessModifier);
-            m.SetFloat("_SnowRoughnessModifierStrength", SnowRoughnessModifierStrength);
-            m.SetFloat("_SnowDetailStrength", SnowDetailStrength);
+                m.SetFloat("_SnowRoughnessModifier", SnowRoughnessModifier);
+                m.SetFloat("_SnowRoughnessModifierStrength", SnowRoughnessModifierStrength);
+                m.SetFloat("_SnowDetailStrength", SnowDetailStrength);
 
-            m.SetFloat("_SnowHeightStrength", SnowHeightStrength);
-            m.SetFloat("_SnowHeightOffset", SnowHeightOffset);
+                m.SetFloat("_SnowHeightStrength", SnowHeightStrength);
+                m.SetFloat("_SnowHeightOffset", SnowHeightOffset);
 
-            m.SetFloat("_GravelUVDetailMultiply", GravelDetailUVMultiply);
-            m.SetFloat("_GravelUVLargeMultiply", GravelLargeUVMultiply);
+                m.SetFloat("_GravelUVDetailMultiply", GravelDetailUVMultiply);
+                m.SetFloat("_GravelUVLargeMultiply", GravelLargeUVMultiply);
 
-            m.SetFloat("_GravelNormalDetailStrength", GravelNormaDetailStrength);
-            m.SetFloat("_GravelNormalLargeStrength", GravelNormaLargeStrength);
+                m.SetFloat("_GravelNormalDetailStrength", GravelNormaDetailStrength);
+                m.SetFloat("_GravelNormalLargeStrength", GravelNormaLargeStrength);
 
-            m.SetFloat("_GravelRoughnessModifier", GravelRoughnessModifier);
-            m.SetFloat("_GravelRoughnessModifierStrength", GravelRoughnessModifierStrength);
-            m.SetFloat("_GravelDetailStrength", GravelDetailStrength);
+                m.SetFloat("_GravelRoughnessModifier", GravelRoughnessModifier);
+                m.SetFloat("_GravelRoughnessModifierStrength", GravelRoughnessModifierStrength);
+                m.SetFloat("_GravelDetailStrength", GravelDetailStrength);
 
-            m.SetFloat("_GravelHeightStrength", GravelHeightStrength);
-            m.SetFloat("_GravelHeightOffset", GravelHeightOffset);
+                m.SetFloat("_GravelHeightStrength", GravelHeightStrength);
+                m.SetFloat("_GravelHeightOffset", GravelHeightOffset);
 
-            m.SetFloat("_DirtUVDetailMultiply", DirtDetailUVMultiply);
-            m.SetFloat("_DirtUVLargeMultiply", DirtLargeUVMultiply);
+                m.SetFloat("_DirtUVDetailMultiply", DirtDetailUVMultiply);
+                m.SetFloat("_DirtUVLargeMultiply", DirtLargeUVMultiply);
 
-            m.SetFloat("_DirtNormalDetailStrength", DirtNormaDetailStrength);
-            m.SetFloat("_DirtNormalLargeStrength", DirtNormaLargeStrength);
+                m.SetFloat("_DirtNormalDetailStrength", DirtNormaDetailStrength);
+                m.SetFloat("_DirtNormalLargeStrength", DirtNormaLargeStrength);
 
-            m.SetFloat("_DirtRoughnessModifier", DirtRoughnessModifier);
-            m.SetFloat("_DirtRoughnessModifierStrength", DirtRoughnessModifierStrength);
-            m.SetFloat("_DirtDetailStrength", DirtDetailStrength);
+                m.SetFloat("_DirtRoughnessModifier", DirtRoughnessModifier);
+                m.SetFloat("_DirtRoughnessModifierStrength", DirtRoughnessModifierStrength);
+                m.SetFloat("_DirtDetailStrength", DirtDetailStrength);
 
-            m.SetFloat("_DirtHeightStrength", DirtDetailStrength);
-            m.SetFloat("_DirtHeightOffset", DirtHeightOffset);
+                m.SetFloat("_DirtHeightStrength", DirtDetailStrength);
+                m.SetFloat("_DirtHeightOffset", DirtHeightOffset);
 
-            m.SetFloat("_GrassUVDetailMultiply", GrassDetailUVMultiply);
-            m.SetFloat("_GrassUVLargeMultiply", GrassLargeUVMultiply);
+                m.SetFloat("_GrassUVDetailMultiply", GrassDetailUVMultiply);
+                m.SetFloat("_GrassUVLargeMultiply", GrassLargeUVMultiply);
 
-            m.SetFloat("_GrassNormalDetailStrength", GrassNormaDetailStrength);
-            m.SetFloat("_GrassNormalLargeStrength", GrassNormaLargeStrength);
+                m.SetFloat("_GrassNormalDetailStrength", GrassNormaDetailStrength);
+                m.SetFloat("_GrassNormalLargeStrength", GrassNormaLargeStrength);
 
-            m.SetFloat("_GrassRoughnessModifier", GrassRoughnessModifier);
-            m.SetFloat("_GrassRoughnessModifierStrength", GrassRoughnessModifierStrength);
-            m.SetFloat("_GrassDetailStrength", GrassDetailStrength);
+                m.SetFloat("_GrassRoughnessModifier", GrassRoughnessModifier);
+                m.SetFloat("_GrassRoughnessModifierStrength", GrassRoughnessModifierStrength);
+                m.SetFloat("_GrassDetailStrength", GrassDetailStrength);
 
-            m.SetFloat("_GrassHeightStrength", GrassHeightStrength);
-            m.SetFloat("_GrassHeightOffset", GrassHeightOffset);
+                m.SetFloat("_GrassHeightStrength", GrassHeightStrength);
+                m.SetFloat("_GrassHeightOffset", GrassHeightOffset);
 
-            m.SetFloat("_ForestUVLargeMultiply", ForestLargeUVMultiply);
-            m.SetFloat("_ForestNormalLargeStrength", ForestNormaLargeStrength);
-            m.SetFloat("_ForestRoughnessModifier", ForestRoughnessModifier);
-            m.SetFloat("_ForestRoughnessModifierStrength", ForestRoughnessModifierStrength);
-            m.SetFloat("_ForestHeightStrength", ForestHeightStrength);
-            m.SetFloat("_ForestHeightOffset", ForestHeightOffset);
+                m.SetFloat("_ForestUVLargeMultiply", ForestLargeUVMultiply);
+                m.SetFloat("_ForestNormalLargeStrength", ForestNormaLargeStrength);
+                m.SetFloat("_ForestRoughnessModifier", ForestRoughnessModifier);
+                m.SetFloat("_ForestRoughnessModifierStrength", ForestRoughnessModifierStrength);
+                m.SetFloat("_ForestHeightStrength", ForestHeightStrength);
+                m.SetFloat("_ForestHeightOffset", ForestHeightOffset);
 
-            m.SetFloat("_CommonUVDetailMultiply", CommonDetailUVMultiply);
-            m.SetFloat("_CommonNormalDetailStrength", CommonNormaDetailStrength);
-            m.SetFloat("_CommonDetailStrength", CommonDetailStrength);
-            m.SetFloat("_CommonHeightDetailStrength", CommonDetailHeightStrength);
-            m.SetFloat("_CommonHeightDetailOffset", CommonDetailHeightOffset);
+                m.SetFloat("_CommonUVDetailMultiply", CommonDetailUVMultiply);
+                m.SetFloat("_CommonNormalDetailStrength", CommonNormaDetailStrength);
+                m.SetFloat("_CommonDetailStrength", CommonDetailStrength);
+                m.SetFloat("_CommonHeightDetailStrength", CommonDetailHeightStrength);
+                m.SetFloat("_CommonHeightDetailOffset", CommonDetailHeightOffset);
 
-            m.SetFloat("_LODDistance0", lodDistance0);
-            m.SetFloat("_LODDistance1", lodDistance1);
-            m.SetFloat("_LODDistance2", lodDistance2);
-            m.SetFloat("_LODDistance3", lodDistance3);
-            m.SetFloat("_LODDistance4", lodDistance4);
-            m.SetInt("_LODDebug", lodDebug ? 1 : 0);
+                m.SetFloat("_LODDistance0", lodDistance0);
+                m.SetFloat("_LODDistance1", lodDistance1);
+                m.SetFloat("_LODDistance2", lodDistance2);
+                m.SetFloat("_LODDistance3", lodDistance3);
+                m.SetFloat("_LODDistance4", lodDistance4);
+                m.SetInt("_LODDebug", lodDebug ? 1 : 0);
 
-            m.SetInt("_SlopeModifierDebug", SlopeModifierDebug ? 1 : 0);
-            m.SetInt("_SlopeModifierEnabled", SlopeModifierEnabled ? 1 : 0);
-            m.SetFloat("_SlopeModifierThreshold", SlopeModifierThreshold);
-            m.SetFloat("_SlopeModifierStrength", SlopeModifierStrength);
+                m.SetInt("_SlopeModifierDebug", SlopeModifierDebug ? 1 : 0);
+                m.SetInt("_SlopeModifierEnabled", SlopeModifierEnabled ? 1 : 0);
+                m.SetFloat("_SlopeModifierThreshold", SlopeModifierThreshold);
+                m.SetFloat("_SlopeModifierStrength", SlopeModifierStrength);
 
-            m.SetInt("_MaterialDebug", materialDebug ? 1 : 0);
-            m.SetColor("_GravelDebug", GravelDebug);
-            m.SetColor("_GrassDebug", GrassDebug);
-            m.SetColor("_DirtDebug", DirtDebug);
-            m.SetColor("_RockDebug", RockDebug);
-            m.SetColor("_WaterlDebug", WaterDebug);
-            m.SetColor("_ForestDebug", ForestDebug);
-            m.SetColor("_SnowDebug", SnowDebug);
+                m.SetInt("_MaterialDebug", materialDebug ? 1 : 0);
+                m.SetColor("_GravelDebug", GravelDebug);
+                m.SetColor("_GrassDebug", GrassDebug);
+                m.SetColor("_DirtDebug", DirtDebug);
+                m.SetColor("_RockDebug", RockDebug);
+                m.SetColor("_WaterlDebug", WaterDebug);
+                m.SetColor("_ForestDebug", ForestDebug);
+                m.SetColor("_SnowDebug", SnowDebug);
+            }
         }
 
         RaycastHit info;
-        if(Physics.Raycast(Camera.main.transform.position, new Vector3(0,-1,0), out info, 500))
+        if (Physics.Raycast(Camera.main.transform.position, new Vector3(0, -1, 0), out info, 500))
         {
-            reflectionProbe.transform.position = transform.position - new Vector3(0, 2*(transform.position.y-info.point.y), 0);
+            reflectionProbe.transform.position = transform.position - new Vector3(0, 2 * (transform.position.y - info.point.y), 0);
         }
         else
         {

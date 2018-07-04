@@ -3,6 +3,8 @@ using System.Collections;
 
 public class FirstPersonMove : MonoBehaviour
 {
+    public UI ui;
+    public Transform sun;
 
     // Animation script
     private CharacterAnimation anim;
@@ -34,6 +36,10 @@ public class FirstPersonMove : MonoBehaviour
     // FixedUpdate is used for physics based movement
     void FixedUpdate()
     {
+        if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
+
+        if (Input.GetKeyDown(KeyCode.F1)) ui.ShowUI = !ui.ShowUI;
+
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             mode = ControlMode.FPS;
@@ -44,6 +50,11 @@ public class FirstPersonMove : MonoBehaviour
             mode = ControlMode.FREE;
             rigidbody.useGravity = false;
         }
+
+        if (Input.GetKey(KeyCode.UpArrow)) sun.localEulerAngles += new Vector3(0.5f,0,0);
+        if (Input.GetKey(KeyCode.DownArrow)) sun.localEulerAngles += new Vector3(- 0.5f, 0, 0);
+        if (Input.GetKey(KeyCode.RightArrow)) sun.localEulerAngles += new Vector3(0, 0.5f, 0);
+        if (Input.GetKey(KeyCode.LeftArrow)) sun.localEulerAngles += new Vector3(0, -0.5f, 0);
 
         if (Input.GetKeyDown(KeyCode.LeftShift)) modifier = 5.0f;
         else if (Input.GetKeyUp(KeyCode.LeftShift)) modifier = 1.0f;

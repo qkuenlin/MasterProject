@@ -55,6 +55,8 @@ public class MaterialManagerEditor : Editor
                 myScript.SatelliteProportion = EditorGUILayout.Slider(myScript.SatelliteProportion, 0.0f, 1.0f);
                 GUILayout.EndHorizontal();
 
+                myScript.debug = EditorGUILayout.Toggle("Debug Mode", myScript.debug);
+
                 myScript.EnableNormalMaps = EditorGUILayout.Toggle("Enable Normal Maps", myScript.EnableNormalMaps);
                 myScript.EnableDetails = EditorGUILayout.Toggle("Enable Details", myScript.EnableDetails);
                 myScript.HeightBasedMix = EditorGUILayout.Toggle("Height Based Mix", myScript.HeightBasedMix);

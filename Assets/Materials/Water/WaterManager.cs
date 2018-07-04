@@ -18,6 +18,8 @@ public class WaterManager : MonoBehaviour
     public Color waterColor;
     public float waterRoughness;
 
+    public bool debug;
+
     public float gridSize;
     // public ComputeShader computeShader;
     public List<Material> terrainMaterials;
@@ -61,61 +63,60 @@ public class WaterManager : MonoBehaviour
     static float y2;
     static bool use_last = false;
 
+    bool first = true;
+
     // Use this for initialization
-    void Start()
+    void Awake()
     {
         //gridSize = Camera.current.pixelWidth;
         wavesTexture = new Texture2D(nbWaves, 1, TextureFormat.RGBAFloat, true);
-        generateWaves();
     }
 
     // Update is called once per frame
     void Update()
     {
-        seed = 1234567;
-        generateWaves();
-
-        float t = Time.unscaledTime;
-
-        Vector4 lods = new Vector4(2*Camera.main.pixelHeight / (Mathf.Deg2Rad*Camera.main.fieldOfView), 
-                                    100.0F / gridSize, //size in meters of the grid (constant over the whole terrain)
-                                    Mathf.Log(lambdaMin) / Mathf.Log(2.0f), 
-                                    (nbWaves - 1.0f) / (Mathf.Log(lambdaMax) / Mathf.Log(2.0f) - Mathf.Log(lambdaMin) / Mathf.Log(2.0f)));
-
-        Matrix4x4 worldToWind = new Matrix4x4();
-        worldToWind[0, 0] = Mathf.Cos(wavesDirection);
-        worldToWind[0, 1] = Mathf.Sin(wavesDirection);
-        worldToWind[1, 0] = -Mathf.Sin(wavesDirection);
-        worldToWind[1, 1] = Mathf.Cos(wavesDirection);
-
-        Matrix4x4 windToWorld = new Matrix4x4();
-        windToWorld[0, 0] = Mathf.Cos(wavesDirection);
-        windToWorld[0, 1] = -Mathf.Sin(wavesDirection);
-        windToWorld[1, 0] = Mathf.Sin(wavesDirection);
-        windToWorld[1, 1] = Mathf.Cos(wavesDirection);
-
-        Vector2 sigmaSqTotal = new Vector2(sigmaXsq, sigmaYsq);
-
-        foreach (Material m in terrainMaterials)
+        if (first ||debug)
         {
-            if (m != null)
-            {
-                m.SetColor("_WaterColor", waterColor);
-                m.SetFloat("_nyquistMin", nyquistMin);
-                m.SetFloat("_nyquistMax", nyquistMax);
-                m.SetFloat("_nbWaves", nbWaves);
-                m.SetVector("_sigmaSqTotal", sigmaSqTotal);
-                m.SetMatrix("_worldToWind", worldToWind);
-                m.SetMatrix("_windToWorld", windToWorld);
-                m.SetVector("_lods", lods);
-                m.SetTexture("_wavesSampler", wavesTexture);
-                m.SetFloat("_WaterRoughness", waterRoughness);
+            first = false;
+            seed = 1234567;
+            generateWaves();
 
-                // m.SetMatrix("screenToCamera", Camera.current.projectionMatrix.inverse);
-                // m.SetMatrix("screenToCamera", Camera.current.worldToCameraMatrix.inverse);
+            Vector4 lods = new Vector4(2 * Camera.main.pixelHeight / (Mathf.Deg2Rad * Camera.main.fieldOfView),
+                                        100.0F / gridSize, //size in meters of the grid (constant over the whole terrain)
+                                        Mathf.Log(lambdaMin) / Mathf.Log(2.0f),
+                                        (nbWaves - 1.0f) / (Mathf.Log(lambdaMax) / Mathf.Log(2.0f) - Mathf.Log(lambdaMin) / Mathf.Log(2.0f)));
+
+            Matrix4x4 worldToWind = new Matrix4x4();
+            worldToWind[0, 0] = Mathf.Cos(wavesDirection);
+            worldToWind[0, 1] = Mathf.Sin(wavesDirection);
+            worldToWind[1, 0] = -Mathf.Sin(wavesDirection);
+            worldToWind[1, 1] = Mathf.Cos(wavesDirection);
+
+            Matrix4x4 windToWorld = new Matrix4x4();
+            windToWorld[0, 0] = Mathf.Cos(wavesDirection);
+            windToWorld[0, 1] = -Mathf.Sin(wavesDirection);
+            windToWorld[1, 0] = Mathf.Sin(wavesDirection);
+            windToWorld[1, 1] = Mathf.Cos(wavesDirection);
+
+            Vector2 sigmaSqTotal = new Vector2(sigmaXsq, sigmaYsq);
+
+            foreach (Material m in terrainMaterials)
+            {
+                if (m != null)
+                {
+                    m.SetColor("_WaterColor", waterColor);
+                    m.SetFloat("_nyquistMin", nyquistMin);
+                    m.SetFloat("_nyquistMax", nyquistMax);
+                    m.SetFloat("_nbWaves", nbWaves);
+                    m.SetVector("_sigmaSqTotal", sigmaSqTotal);
+                    m.SetMatrix("_worldToWind", worldToWind);
+                    m.SetMatrix("_windToWorld", windToWorld);
+                    m.SetVector("_lods", lods);
+                    m.SetTexture("_wavesSampler", wavesTexture);
+                    m.SetFloat("_WaterRoughness", waterRoughness);
+                }
             }
         }
-
     }
 
     float log(float x)
