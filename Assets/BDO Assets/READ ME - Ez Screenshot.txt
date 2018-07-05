@@ -1,0 +1,23 @@
+HOW TO USE:
+- Open Ez Screenshot window on Window/BDO Assets/Ez Screenshot;
+- Selectif you to use a single camera or multiple cameras;
+- Set the name of the image;
+- Set the location to save your image.
+
+MOCKUPs:
+- Use this option to place the screenshot of the game inside of a mockup of your choice;
+- Set the brand, category, device, color and orientation;
+- Check the preview of the mockup;
+- Each mockup has a different aspect ratio, so to prevent any errors your game view will adjust automatically to be the same aspect as the mockup;
+- Set the width or height of your image.
+
+BACKGROUND:
+- You can use this option to set a background for your image;
+- IMPORTANT: If you are using a background, the size of the image will be the size that you select for the background;
+- Select the color for the background;
+- Set the background size.
+
+IMPORTANT:
+- Use the Game View window as reference, what you see there it will be on your screenshot;
+- If you are not using mockups you can select several aspects to create the perfect image;
+- If you are on Free Aspect what you see on Game View may not be what will be on screenshot.

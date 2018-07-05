@@ -287,7 +287,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 					V = normalize(V);
 
 					o.u =  mul(_worldToWind, float4(v.vertex.xz , 0, 0) ).xy;
-					o.lod = atan(_lods.y / t) * _lods.x * sqrt(dot(V, wNormal));
+					o.lod = sqrt(atan(_lods.y / t) * _lods.x * dot(V, wNormal));
 
 					float3 dPdu = float3(1.0, 0.0, 0.0);
 					float3 dPdv = float3(0.0, 1.0, 0.0);
@@ -1551,7 +1551,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				float3 Lsky = fresnel * meanSkyRadiance(V.xzy, N, Tx, Ty, sigmaSq) * saturate(Shadows + 0.25);
 
-				float3 Lsea = (1 - fresnel) * _WaterColor.rgb * _WaterColor.a * Esky(L.y * saturate(Shadows + 0.1))/ 3.141592657;
+				float3 Lsea = (1 - fresnel) * lerp(_WaterColor.rgb, satellite.rgb, 0.5) * _WaterColor.a * Esky(L.y * saturate(Shadows + 0.1))/ 3.141592657;
 
 				float4 WaterColor = float4(Lsea + Lsky + Lsun, 1.0);
 
@@ -1569,7 +1569,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 					if (ShoreHeight < 0.5 + weight * dP)
 					{
-						UV = lerp(UV + N.xy*weight*0.00005, UV, pow(saturate(ShoreHeight + 0.3 - dP), 2));
+						UV = lerp(UV + N.xy*weight*0.0002, UV, pow(saturate(ShoreHeight + 0.3 - dP), 2));
 						bool tmp = _parallax;
 						_parallax = 0;
 						gH = GravelH(1, shoreWeight);
@@ -1902,7 +1902,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 					else Color = satellite;
 
 
-					return Color;
+					return float4(Color.rgb, 1.0);
 					
 				}
 				else

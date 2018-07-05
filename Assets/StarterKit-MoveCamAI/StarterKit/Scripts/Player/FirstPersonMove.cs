@@ -31,39 +31,48 @@ public class FirstPersonMove : MonoBehaviour
     void Start()
     {
         rigidbody = GetComponent<Rigidbody>();
+
+        rotX = transform.localEulerAngles.y;
+        rotY = Camera.main.transform.localEulerAngles.x;
+
     }
 
     // FixedUpdate is used for physics based movement
     void FixedUpdate()
     {
-        if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
+        if (Input.GetAxis("Cancel") > 0) Application.Quit();
 
         if (Input.GetKeyDown(KeyCode.F1)) ui.ShowUI = !ui.ShowUI;
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        float controlMode = Input.GetAxis("Control Mode");
+        if (controlMode > 0)
         {
             mode = ControlMode.FPS;
             rigidbody.useGravity = true;
         }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        else if (controlMode < 0)
         {
             mode = ControlMode.FREE;
             rigidbody.useGravity = false;
         }
 
-        if (Input.GetKey(KeyCode.UpArrow)) sun.localEulerAngles += new Vector3(0.5f,0,0);
-        if (Input.GetKey(KeyCode.DownArrow)) sun.localEulerAngles += new Vector3(- 0.5f, 0, 0);
-        if (Input.GetKey(KeyCode.RightArrow)) sun.localEulerAngles += new Vector3(0, 0.5f, 0);
-        if (Input.GetKey(KeyCode.LeftArrow)) sun.localEulerAngles += new Vector3(0, -0.5f, 0);
+        modifier = Mathf.Lerp(1.0f, 5.0f, Input.GetAxis("Accelerate"));
 
-        if (Input.GetKeyDown(KeyCode.LeftShift)) modifier = 5.0f;
-        else if (Input.GetKeyUp(KeyCode.LeftShift)) modifier = 1.0f;
+        float sunX = Input.GetAxis("SunX");
+        float sunY = Input.GetAxis("SunY");
+        SunRotation(sunX, sunY);
 
         float horizontal = Input.GetAxis("Horizontal"); // set a float to control horizontal input
         float vertical = Input.GetAxis("Vertical"); // set a float to control vertical input
+        float height = Input.GetAxis("Up_Down");
+        PlayerMove(horizontal, vertical, height); // Call the move player function sending horizontal and vertical movements
+
         MouseLook(); // Call the player look function which controls the mouse
-        PlayerMove(horizontal, vertical); // Call the move player function sending horizontal and vertical movements
-        Jump(); // Call the Jump function! Woot!
+    }
+
+    private void SunRotation(float x, float y)
+    {
+        sun.localEulerAngles += new Vector3(x, y, 0);
     }
 
     private void MouseLook()
@@ -76,9 +85,9 @@ public class FirstPersonMove : MonoBehaviour
         Camera.main.transform.localEulerAngles = new Vector3(-rotY, 0, 0);
     }
 
-    private void PlayerMove(float h, float v)
+    private void PlayerMove(float h, float v, float ud)
     {
-        if (h != 0f || v != 0f) // If horizontal or vertical are pressed then continue
+        if (h != 0f || v != 0f || ud != 0f) // If horizontal or vertical are pressed then continue
         {
             if (h != 0f && v != 0f) // If horizontal AND vertical are pressed then continue
             {
@@ -92,24 +101,21 @@ public class FirstPersonMove : MonoBehaviour
             switch (mode)
             {
                 case ControlMode.FPS:
+                    if(ud > 0)
+                    {
+                        if (IsGrounded()) // If the player is grounded, this calls a boolean, then continue
+                        {
+                            rigidbody.velocity += 5f * Vector3.up; // add velocity to the player on vector UP
+                        }
+                    }
                     rigidbody.MovePosition(rigidbody.position + (transform.right * h) * speed * modifier * Time.deltaTime); // Move player based on the horizontal input
                     rigidbody.MovePosition(rigidbody.position + (transform.forward * v) * speed * modifier * Time.deltaTime); // Move player based on the vertical input
                     break;
                 case ControlMode.FREE:
-                    rigidbody.MovePosition(rigidbody.position + (Camera.main.transform.right * h) * speed * modifier * Time.deltaTime); // Move player based on the horizontal input
-                    rigidbody.MovePosition(rigidbody.position + (Camera.main.transform.forward * v) * speed * modifier * Time.deltaTime); // Move player based on the vertical input
+                    rigidbody.MovePosition(rigidbody.position + 4 * (Camera.main.transform.right * h) * speed * modifier * Time.deltaTime); // Move player based on the horizontal input
+                    rigidbody.MovePosition(rigidbody.position + 4 * (Camera.main.transform.forward * v) * speed * modifier * Time.deltaTime); // Move player based on the vertical input
+                    rigidbody.MovePosition(rigidbody.position + 4 * (transform.up * ud) * speed * modifier * Time.deltaTime); // Move player based on the vertical input
                     break;
-            }
-        }
-    }
-
-    private void Jump()
-    {
-        if (Input.GetKeyDown(KeyCode.Space)) // If the Space bar is pressed down then continue
-        {
-            if (IsGrounded()) // If the player is grounded, this calls a boolean, then continue
-            {
-                rigidbody.velocity += 5f * Vector3.up; // add velocity to the player on vector UP
             }
         }
     }
