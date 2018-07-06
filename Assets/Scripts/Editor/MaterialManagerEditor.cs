@@ -304,7 +304,7 @@ public class MaterialManagerEditor : Editor
                     EditorGUI.indentLevel--;
                 }
 
-                // Detail Textures
+                // Common Detail Textures
                 EditorGUILayout.LabelField("Common Rock Details", style);
                 {
                     EditorGUI.indentLevel++;
@@ -319,6 +319,10 @@ public class MaterialManagerEditor : Editor
                     myScript.CommonDetailUVMultiply = EditorGUILayout.FloatField(myScript.CommonDetailUVMultiply);
                     GUILayout.EndHorizontal();
 
+                    GUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Color");
+                    myScript.CommonColorDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.CommonColorDetails, typeof(Texture2D), false);
+                    GUILayout.EndHorizontal();
                     GUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("Height");
                     myScript.CommonHeightDetails = (Texture2D)EditorGUILayout.ObjectField(myScript.CommonHeightDetails, typeof(Texture2D), false);

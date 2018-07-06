@@ -225,6 +225,8 @@ public class MaterialManager : MonoBehaviour
     [SerializeField]
     public float CommonNormaDetailStrength;
     [SerializeField]
+    public Texture2D CommonColorDetails;
+    [SerializeField]
     public Texture2D CommonNormalDetails;
     [SerializeField]
     public Texture2D CommonHeightDetails;
@@ -316,7 +318,7 @@ public class MaterialManager : MonoBehaviour
     // Use this for initialization
     void Awake()
     {
-        Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 20, TextureFormat.ARGB32, true);
+        Textures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 21, TextureFormat.ARGB32, true);
         HeightTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 6 * 2 + 1 + N_NOISE, TextureFormat.RGBAFloat, true);
         NormalTextures = new Texture2DArray(RockColorDetails.width, RockColorDetails.height, 6 * 2, TextureFormat.RGBAFloat, true);
 
@@ -492,6 +494,10 @@ public class MaterialManager : MonoBehaviour
 
                 if (ForestRoughnessLarge != null) Textures.SetPixels(ForestRoughnessLarge.GetPixels(), 18 + 1);
                 yield return new WaitForSeconds(0.05f);
+
+                if (CommonColorDetails != null) Textures.SetPixels(CommonColorDetails.GetPixels(), 20);
+                yield return new WaitForSeconds(0.05f);
+
                 Textures.Apply();
 
                 if (RockHeightLarge != null) HeightTextures.SetPixels(RockHeightLarge.GetPixels(), 0 + N_NOISE);
@@ -570,6 +576,7 @@ public class MaterialManager : MonoBehaviour
 
                 if (ForestNormalLarge != null) NormalTextures.SetPixels(ForestNormalLarge.GetPixels(), 11);
                 yield return new WaitForSeconds(0.05f);
+
 
                 NormalTextures.Apply();
 

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1915415680}
-  m_IndirectSpecularColor: {r: 0.1782635, g: 0.21706042, b: 0.26993272, a: 1}
+  m_IndirectSpecularColor: {r: 0.17826396, g: 0.21706095, b: 0.26993355, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -473,12 +473,13 @@ MonoBehaviour:
   GrassHeightStrength: 1.4
   GrassHeightOffset: 0
   CommonNormaDetailStrength: 1
+  CommonColorDetails: {fileID: 2800000, guid: f6bb5effd7dab69479948c475191ef54, type: 3}
   CommonNormalDetails: {fileID: 2800000, guid: a42df9055cddd504bbd374e8cddf846f, type: 3}
   CommonHeightDetails: {fileID: 2800000, guid: 084af1617696bd34e91ab00c8a4e4951, type: 3}
-  CommonDetailUVMultiply: 203.75
+  CommonDetailUVMultiply: 100
   CommonDetailStrength: 1
   CommonDetailHeightStrength: 2
-  CommonDetailHeightOffset: -0.608
+  CommonDetailHeightOffset: -0.6
   ForestNormaLargeStrength: 1
   ForestRoughnessModifier: 0
   ForestRoughnessModifierStrength: 0
