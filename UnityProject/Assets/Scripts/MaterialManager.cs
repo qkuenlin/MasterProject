@@ -609,6 +609,12 @@ public class MaterialManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Activate Parallax
+        if (Input.GetKeyDown(KeyCode.P)) { Parallax = !Parallax; first = true; }
+
+        // Comparison
+        if (Input.GetKeyDown(KeyCode.O)) { SatelliteProportion = SatelliteProportion == 0.5f ? 0 : 0.5f; first = true; }
+
         if (first || debug)
         {
             first = false;
