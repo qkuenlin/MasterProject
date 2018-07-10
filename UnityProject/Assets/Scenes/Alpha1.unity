@@ -26,19 +26,19 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: fd5fe8102ea988b4d92c7d3e41de12bf, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
   m_HaloTexture: {fileID: 0}
   m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
   m_DefaultReflectionMode: 0
-  m_DefaultReflectionResolution: 128
+  m_DefaultReflectionResolution: 512
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 1915415680}
-  m_IndirectSpecularColor: {r: 0.1782635, g: 0.21706042, b: 0.26993272, a: 1}
+  m_IndirectSpecularColor: {r: 0.065525, g: 0.10632881, b: 0.18321608, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -376,11 +376,11 @@ MonoBehaviour:
   EnableNoiseLum: 0
   NoiseLumScale: 17
   NoiseLumStrength: 0.5
-  debug: 0
+  debug: 1
   Parallax: 0
   Tessellation: 0
   EnableDetails: 1
-  EnableNormalMaps: 1
+  EnableNormalMaps: 0
   HeightBasedMix: 0
   AmbientLightColor: {r: 0.7311321, g: 0.93253005, b: 1, a: 0}
   AmbientLightStrength: 0.4
@@ -886,7 +886,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 8
   m_Type: 1
-  m_Color: {r: 1, g: 0.99786466, b: 0.9103774, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
@@ -910,7 +910,7 @@ Light:
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
-  m_ColorTemperature: 6000
+  m_ColorTemperature: 5400
   m_UseColorTemperature: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
@@ -920,13 +920,13 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1915415679}
-  m_LocalRotation: {x: 0.11128074, y: 0.43189368, z: -0.053795204, w: 0.8934151}
+  m_LocalRotation: {x: 0.117515154, y: 0.43150762, z: -0.056809038, w: 0.89261645}
   m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 14.2, y: 51.6, z: 0}
+  m_LocalEulerAnglesHint: {x: 15, y: 51.6, z: 0}
 --- !u!1 &1985781908
 GameObject:
   m_ObjectHideFlags: 0
@@ -984,7 +984,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0, g: 0.38815784, b: 1, a: 0}
   m_projectionMatrixMode: 1
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}

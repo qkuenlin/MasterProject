@@ -1,10 +1,4 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
-
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "Custom/customTerrainShader_hlsl" {
+﻿Shader "Custom/customTerrainShader_hlsl" {
 	Properties{
 		_ClassesDGR("Segmentation Image Dirt/Gravel/Rock", 2D) = "white" {}
 		_ClassesWSGT("Segmentation Image Water/Snow/Grass/Forest", 2D) = "white" {}
@@ -17,15 +11,18 @@ Shader "Custom/customTerrainShader_hlsl" {
 			Tags { "LightMode" = "ForwardBase" }
 			LOD 200
 			CGPROGRAM
-
+			#include "UnityImageBasedLighting.cginc"
 			#include "AutoLight.cginc"
 			#include "UnityCG.cginc"
 			#include "Lighting.cginc"
 			#include "UnityStandardBRDF.cginc"
 			#include "UnityGlobalIllumination.cginc"
 			#include "UnityStandardConfig.cginc"
-			#include "UnityImageBasedLighting.cginc"
 
+			#define M_1_PI 0.318309886183706f
+			#define M_PI   3.141592653589793f
+			#define M_2PI  6.283185307179586f
+			#define M_SQRT_PI 1.772453850905515f
 
 			#pragma vertex vertex //vert
 			#pragma fragment frag
@@ -168,6 +165,9 @@ Shader "Custom/customTerrainShader_hlsl" {
 			float _SlopeModifierThreshold;
 			float _SlopeModifierStrength;
 
+			int _LightSampleCount;
+
+
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
@@ -192,7 +192,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 			uint ReverseBits32(uint bits)
 			{
-#if 0 // Shader model 5
+#if 1 // Shader model 5
 				return reversebits(bits);
 #else
 				bits = (bits << 16) | (bits >> 16);
@@ -213,6 +213,36 @@ Shader "Custom/customTerrainShader_hlsl" {
 			float2 Hammersley2d(uint i, uint maxSampleCount)
 			{
 				return float2(float(i) / float(maxSampleCount), RadicalInverse_VdC(i));
+			}
+
+			//-----------------------------------------------------------------------------
+			float Hash(uint s)
+			{
+				s = s ^ 2747636419u;
+				s = s * 2654435769u;
+				s = s ^ (s >> 16);
+				s = s * 2654435769u;
+				s = s ^ (s >> 16);
+				s = s * 2654435769u;
+				return float(s) / 4294967295.0f;
+			}
+
+			//-----------------------------------------------------------------------------
+			float2 InitRandom(float2 input)
+			{
+				float2 r;
+				r.x = Hash(uint(input.x * 4294967295.0f));
+				r.y = Hash(uint(input.y * 4294967295.0f));
+
+				return r;
+			}
+
+			// generate an orthonormalBasis from 3d unit vector.
+			void GetLocalFrame(float3 N, out float3 tangentX, out float3 tangentY)
+			{
+				float3 upVector = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+				tangentX = normalize(cross(upVector, N));
+				tangentY = cross(N, tangentX);
 			}
 
 			float RockH(v2f input, float weight) {
@@ -297,6 +327,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 					float iMin = max(0.0, floor((log2(_nyquistMin * _lods.y) - _lods.z) * _lods.w));
 
+					[loop]
 					for (float i = iMin; i < _nbWaves; i += 1.0f)
 					{
 						float4 wt = tex2Dlod(_wavesSampler, float4((i + 0.5) / _nbWaves, 0,0,0));
@@ -305,7 +336,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 						float c = cos(phase);
 						float overk = 9.81f / (wt.y * wt.y);
 
-						float wp = smoothstep(_nyquistMin, _nyquistMax, (2.0 * 3.141592) * overk / _lods.y);
+						float wp = smoothstep(_nyquistMin, _nyquistMax, (M_2PI) * overk / _lods.y);
 
 						float3 factor = wp * wt.x * float3(wt.zw * overk, 1.0);
 						dP += factor * float3(s, s, c);
@@ -617,40 +648,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return float4(rgb, 1.0);
 			}
 
-			float GGX(float3 N, float3 H, float a)
-			{
-				return (a*a) / (3.141592*pow(1.0+(dot(N, H)*dot(N, H))*(a*a - 1.0), 2.0));
-			}
-
-			float beckman(float cosThetaH, float m)
-			{
-				float cosThetaH2 = cosThetaH * cosThetaH;
-				float e = (cosThetaH2 - 1) / (m*m*cosThetaH2);
-				float tmp = 3.141592 * m*m*cosThetaH2*cosThetaH2;
-
-				return exp(e) / tmp;
-			}
-
-			float blinnPhong(float cosThetaH, float m) {
-				float n = 2.0 / (m * m) - 2.0;
-
-				return (n + 2.0) / (2.0*3.141592) * pow(cosThetaH, n);
-			}
-
-			float fresnel(float cosTheta, float n2)
-			{
-				float cos_theta_m1 = 1 - cosTheta;
-				float R0 = 0.02;
-
-				return R0 + (1 - R0)*cos_theta_m1*cos_theta_m1*cos_theta_m1*cos_theta_m1*cos_theta_m1;
-			}
-
-			float smithShadowing(float cosThetaI, float cosThetaO, float m) {
-				float a = m * 0.79788; //sqrt(2/pi)
-
-				return 1.0 / ((cosThetaO * (1.0 - a) + a)*(cosThetaI*(1.0 - a) + a));
-			}
-
 			float V_SmithGGXCorrelated(float NdotL, float NdotV, float alphaG) {
 				float alphaG2 = alphaG * alphaG;
 
@@ -667,110 +664,55 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return m2 / (f*f);
 			}
 
-			float F_Schlick(float3 f0, float f90, float u) {
-				return f0 + (f90 - f0) * pow(1.0f - u, 5.0f);
+			float F_Schlick(float u) {
+				float m = saturate(1 - u);
+				float m2 = m * m;
+				return m2 * m2 * m;
 			}
 
-			float Fr_DisneyDiffuse(float NdotV, float NdotL, float LdotH, float linearRoughness) {
-				float energyBias = lerp(0, 0.5, linearRoughness);
-				float energyFactor = lerp(1.0, 1.0 / 1.51, linearRoughness);
-				float fd90 = energyBias + 2.0 * LdotH*LdotH*linearRoughness;
-				float f0 = float3(1.0f, 1.0f, 1.0f);
+			void ImportanceSampleCosDir(float2 u,
+				float3 N,
+				float3 tangentX,
+				float3 tangentY,
+				out float3 L)
+			{
+				// Cosine sampling - ref: http://www.rorydriscoll.com/2009/01/07/better-sampling/
+				float cosTheta = sqrt(max(0.0f, 1.0f - u.x));
+				float sinTheta = sqrt(u.x);
+				float phi = UNITY_TWO_PI * u.y;
 
-				float lightScatter = F_Schlick(f0, fd90, NdotL).r;
-				float viewScatter = F_Schlick(f0, fd90, NdotV).r;
-
-				return lightScatter * viewScatter * energyFactor;
+				// Transform from spherical into cartesian
+				L = float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+				// Local to world
+				L = tangentX * L.x + tangentY * L.y + N * L.z;
 			}
 
-			void importanceSampleCosDir(in float2 u, in float3 N, out float3 wo, out float NdotL, out float pdf) {
-				//Build Local Referential
-				float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
-				float3 tangentX = normalize(cross(upVector, N));
-				float3 tangentY = cross(N, tangentX);
+			// ----------------------------------------------------------------------------
+			// weightOverPdf return the weight (without the diffuseAlbedo term) over pdf. diffuseAlbedo term must be apply by the caller.
+			void ImportanceSampleLambert(
+				float2 u,
+				float3 N,
+				float3 tangentX,
+				float3 tangentY,
+				out float3 L,
+				out float NdotL,
+				out float weightOverPdf)
+			{
+				ImportanceSampleCosDir(u, N, tangentX, tangentY, L);
 
-				float r = sqrt(u.x);
-				float phi = u.y * 3.141592 * 2;
+				NdotL = saturate(dot(N, L));
 
-				wo = float3(r*cos(phi), r*sin(phi), sqrt(max(0.0f, 1.0f - u.x)));
-				wo = normalize(tangentX * wo.y + tangentY * wo.x + N * wo.z);
+				// Importance sampling weight for each sample
+				// pdf = N.L / PI
+				// weight = fr * (N.L) with fr = diffuseAlbedo / PI
+				// weight over pdf is:
+				// weightOverPdf = (diffuseAlbedo / PI) * (N.L) / (N.L / PI)
+				// weightOverPdf = diffuseAlbedo
+				// diffuseAlbedo is apply outside the function
 
-				NdotL = dot(wo, N);
-				pdf = NdotL / 3.141592;
+				weightOverPdf = 1.0f;
 			}
 
-			/*
-			float3 evaluateIBLDiffuseCubeReference(float3 N, float3 wi, float roughness) {
-				float3 accLight = 0;
-
-				int _sampleCount = 128;
-				[unroll(128)]
-				for (int i = 0; i < _sampleCount; ++i) {
-					float2 u = Hammersley2d(i, _sampleCount);
-					float3 wo;
-					float NdotL;
-					float pdf;
-					importanceSampleCosDir(u, N, wo, NdotL, pdf);
-					if (NdotL > 0) {
-						float cosD = sqrt((dot(wi, wo) + 1.0f)*0.5);
-						float NdotV = saturate(dot(N, wi));
-						float NdotL_sat = saturate(NdotL);
-						
-						float fd90 = 0.5 + 2 * cosD*cosD*sqrt(roughness);
-						float lightScatter = 1 + (fd90 - 1)*pow(1 - NdotL_sat, 5);
-						float viewScatter = 1 + (fd90 - 1)*pow(1 - NdotV, 5);
-
-						accLight += texCUBE(_ReflectionCubeMap, L).rgb * viewScatter * lightScatter;
-					}
-				}
-				return accLight *(1.0f / _sampleCount);
-			}
-			
-			// Based on Appendix A of Moving Frostbite to PBR
-			float3 evaluateSpecularIBLReference(float3 N, float3 V, float roughness, float f0, float f90) {
-				//Build Local Referential
-				float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
-				float3 tangentX = normalize(cross(upVector, N));
-				float3 tangentY = cross(N, tangentX);
-
-				float3 accLight = 0;
-
-				int _sampleCount = 32;
-				for (int i = 0; i < _sampleCount; ++i) {
-					float2 u = Hammersley2d(i, _sampleCount);
-
-					float cosThetaH = sqrt((1 - u.x) / (1 + (roughness*roughness - 1)*u.x));
-					float sinThetaH = sqrt(1 - min(1.0, cosThetaH*cosThetaH));
-					float phiH = u.y * 3.141592 * 2;
-
-					float3 H;
-					H = float3(sinThetaH*cos(phiH), sinThetaH*sin(phiH), cosThetaH);
-					H = normalize(tangentX * H.y + tangentY * H.x + N * H.z);
-					L = normalize(2.0f * dot(V, H) * H - V);
-
-					if (dot(L, N) > 0) {
-						float LdotH = saturate(dot(H, L));
-						float NdotH = saturate(dot(H, N));
-						float NdotV = saturate(dot(V, N));
-						float NdotL = saturate(dot(L, N));
-
-						float D = D_GGX(NdotH, roughness);
-						float pdfH = D * NdotH;
-						float pdf = pdfH / (4.0f * LdotH);
-
-						float3 F = F_Schlick(f0, f90, LdotH);
-						float G = V_SmithGGXCorrelated(NdotL, NdotV, roughness);
-						float weight = F * G * D / (4.0 * NdotV);
-
-						if (pdf > 0 && weight > 0) {
-							accLight += texCUBE(_ReflectionCubeMap, L).rgb * weight / pdf;
-						}
-					}
-				}
-
-				return accLight / _sampleCount;
-			}
-			*/
 			float Geom(float3 v, float3 H, float3 N, float roughness)
 			{
 				float cosTheta = dot(v, N);
@@ -836,77 +778,103 @@ Shader "Custom/customTerrainShader_hlsl" {
 				return normalize(cross(v1,v2));
 			}
 
+			float Principled_DisneyDiffuse(float NdotV, float NdotL, float LdotH, float roughness) {
+				float FL = F_Schlick(NdotL);
+				float FV = F_Schlick(NdotV);
+
+				float fd90 = 0.5f + 2.0f * LdotH * LdotH * roughness;
+
+				float Fd = (1.0f * (1.0f - FL) + fd90 * FL) * (1.0f * (1.0f - FV) + fd90 * FV);
+
+				return NdotL * Fd * M_1_PI;
+			}
+
 			float4 microfacet(Material m) {
 				if (_MaterialDebug == 1) {
 					return m.Albedo;
 				}
 
-				float3 Normal = float3(0, 0, 0);
+				float3 N = float3(0, 0, 0);
 				
-				Normal.x = dot(tspace0, m.Normal.xyz);
-				Normal.y = dot(tspace1, m.Normal.xyz);
-				Normal.z = dot(tspace2, m.Normal.xyz);
-
-				//return float4(Normal, 1.0);
-				//return albedo * Fr_DisneyDiffuse(dot(Normal, V.xzy), dot(Normal, L.xzy), dot(Normal, H.xzy), roughness);
+				N.x = dot(tspace0, m.Normal.xyz);
+				N.y = dot(tspace1, m.Normal.xyz);
+				N.z = dot(tspace2, m.Normal.xyz);
 				
-				float cosThetaO = dot(L, Normal);
-				float cosThetaI = dot(V, Normal);
-				float cosThetaH = dot(H, Normal);
+				float cosThetaO = dot(L, N);
+				float cosThetaI = dot(V, N);
+				float cosThetaH = dot(H, N);
 
-				//return Fr_DisneyDiffuse(cosThetaI, cosThetaO, cosThetaH, sqrt(roughness));
+				float NdotV = abs(dot(N, V)) + 1e-5f;
 
+				float4 Direct = 0;
+				/* DIRECT SUN ILLUMINATION */
+				if(Shadows > 0)
+				{
+					float LdotH = saturate(dot(L, H));
+					float NdotH = saturate(dot(N, H));
+					float NdotL = saturate(dot(N, L));
 
-				/* DIRECT ILLUMINATION + SPECULAR HIGHLIGHT*/
-				fixed4 specular = fixed4(0.0, 0, 0, 0);
-				if (cosThetaH > 0 && cosThetaO > 0 && Shadows > 0) {
-					float F = fresnel(dot(L, H), 1.5f);
-					float D = blinnPhong(cosThetaH, m.Roughness) * 3.141592 / 4.0;
-					float G = smithShadowing(cosThetaI, cosThetaO, m.Roughness);// (cosThetaO*cosThetaI);//Geom(V, H, Normal, roughness)*Geom(L, H, Normal, roughness) / (cosThetaO*cosThetaI);
-					
-					specular = saturate(D * F * G) * _LightColor0 * Shadows;
+					float3 Fd = 0;
+					float3 Fr = 0;
+					if (NdotL > 0 && NdotV > 0) {
+						//Disney Principled Diffuse
+						Fd = m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness);
+
+						//Specular
+						float3 F = F_Schlick(LdotH);
+						float Vis = V_SmithGGXCorrelated(NdotV, NdotL, m.Roughness);
+						float D = D_GGX(NdotH, m.Roughness);
+						Fr = D * F * Vis * M_1_PI;
+					}
+
+					Direct = float4(_LightColor0 * (Fd +(1-m.Roughness)*Fr) * Shadows, 1.0);
 				}
 
-				float dotNL_ = (cosThetaO+1)/2.0;
-				dotNL_ *= dotNL_;
-				fixed4 diffuse = saturate(m.Albedo *_LightColor0 * cosThetaO) * Shadows;
+				float3 tangentX, tangentY;
+				GetLocalFrame(N, tangentX, tangentY);
+				float2 randNum = InitRandom(N.xy * 0.5f + 0.5f);
+				float4 Indirect = 0;
 
-				float4 Direct = diffuse + (1 - m.Roughness)*specular;
-
+				float r = _LightSampleCount / 72.0f;
+				r = 1 - r * r;
 				/* INDIRECT ILLUMINATION */
-				/*
-				float4 IndirectLight = float4(0, 0, 0, 0);
-				for (int i = 0; i < 9; i++) {
-					float3 wo = reflect(-V, Normal);
-					switch (i) {
-						case 0: break;
-						case 1: wo = reflect(-V, normalize(Normal + float3(roughness, 0, 0))); break;
-						case 2: wo = reflect(-V, normalize(Normal + float3(-roughness, 0, 0))); break;
-						case 3: wo = reflect(-V, normalize(Normal + float3(0, 0, roughness))); break;
-						case 4: wo = reflect(-V, normalize(Normal + float3(0, 0, -roughness))); break;
-						case 5: wo = reflect(-V, normalize(Normal + float3(roughness/2, 0, roughness / 2))); break;
-						case 6: wo = reflect(-V, normalize(Normal + float3(roughness/2, 0, -roughness / 2))); break;
-						case 7: wo = reflect(-V, normalize(Normal + float3(-roughness / 2, 0, roughness/2))); break;
-						case 8: wo = reflect(-V, normalize(Normal + float3(-roughness / 2, 0, -roughness/2))); break;
-						default: break;
-					} 
+				//[unroll(16)]
+				[loop]
+				for (int i = 0; i < _LightSampleCount; i++) {
+					float2 u = Hammersley2d(i, _LightSampleCount);
+					u = frac(u + randNum + 0.5f);
+					float3 L;
+					float NdotL;
+					float weightOverPdf=0;
 
-					IndirectLight += dot(wo, Normal) * texCUBElod(_ReflectionCubeMap, float4(wo, roughness*roughness * 7));
-				}
-				IndirectLight /= 9.0;
-				*/
+					// for Disney we still use a Cosine importance sampling, true Disney importance sampling imply a look up table
+					ImportanceSampleLambert(u, N, tangentX, tangentY, L, NdotL, weightOverPdf);
 
-				float3 wo = reflect(-V, Normal);
+					float3 H = normalize(V + L);
+					float LdotH = saturate(dot(L, H));
+					float3 NdotH = saturate(dot(N, H));
 
-				float4 IndirectLight = dot(wo, Normal) * SampleReflection(wo, m.Roughness);
+					if (NdotL > 0) {
+						//Diffuse
+						float3 Fd = m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness);
 
-				float4 Indirect = lerp(m.Albedo*IndirectLight, IndirectLight, (1-m.Roughness)*fresnel(dot(H, V), 1.33f));
-				
-				/* DIRECT REFLECTION */
-				//float3 reflectDir = reflect(-V, Normal);
-				//float4 Reflection = (1 - roughness)*texCUBElod(_ReflectionCubeMap, float4(reflectDir, roughness*roughness*9));
-				
-				return saturate(Direct + Indirect);
+						//Specular
+						float3 Fr = 0;
+						
+						if (_LightSampleCount >= 2048) {
+							float3 F = F_Schlick(LdotH);
+							float Vis = V_SmithGGXCorrelated(NdotV, NdotL, m.Roughness);
+							float D = D_GGX(NdotH, m.Roughness);
+							Fr = D * F * Vis * M_1_PI;
+						}
+						float4 sky = SampleReflection(L.xyz, r);
+						Indirect += float4((Fd + (1-m.Roughness) * Fr), 1.0);
+					}
+				}		
+
+				Indirect /= _LightSampleCount;
+
+				return saturate(Direct + Indirect);				
 			}
 
 			Material Gravel(float wetness, float height) {
@@ -1430,8 +1398,8 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 			float Lambda(float cosTheta, float sigmaSq) {
 				float v = cosTheta / sqrt((1.0 - cosTheta * cosTheta) * (2.0 * sigmaSq));
-				return max(0.0, (exp(-v * v) - v * sqrt(3.141592657) * erfc(v)) / (2.0 * v * sqrt(3.141592657)));
-				//return (exp(-v * v)) / (2.0 * v * sqrt(3.141592657)); // approximate, faster formula
+				return max(0.0, (exp(-v * v) - v * M_SQRT_PI * erfc(v)) / (2.0 * v * M_SQRT_PI));
+				//return (exp(-v * v)) / (2.0 * v * sqrt(3.141592)); // approximate, faster formula
 			}
 
 			// V, N, Tx, Ty in world space
@@ -1474,7 +1442,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 				float zV = dot(V, N); // cos of receiver zenith angle
 				float zH2 = zH * zH;
 
-				float p = exp(-0.5 * (zetax * zetax / sigmaSq.x + zetay * zetay / sigmaSq.y)) / (2.0 * 3.141592657 * sqrt(sigmaSq.x * sigmaSq.y));
+				float p = exp(-0.5 * (zetax * zetax / sigmaSq.x + zetay * zetay / sigmaSq.y)) / (M_2PI * sqrt(sigmaSq.x * sigmaSq.y));
 
 				float tanV = atan2(dot(V, Ty), dot(V, Tx));
 				float cosV2 = 1.0 / (1.0 + tanV * tanV);
@@ -1499,7 +1467,6 @@ Shader "Custom/customTerrainShader_hlsl" {
 				if (sH < 0.1) return lerp(float3(0.40, 0.42, 0.39), float3(0.6, 0.75, 0.83), sH / 0.1);
 				if (sH == 0.1) return float3(0.6, 0.75, 0.83);
 				if (sH < 1) return lerp(float3(0.6, 0.75, 0.83), float3(0.72, 0.92, 1), (sH - 0.1) / 0.9);
-
 				else return float3(0.72, 0.92, 1);
 			}
 
@@ -1520,7 +1487,8 @@ Shader "Custom/customTerrainShader_hlsl" {
 				
 				float dP = input.dP;
 
-				[unroll(60)]
+				//[unroll(60)]
+				[loop]
 				for (float i = iMin; i <= iMAX; i += 1.0) {
 					float4 wt = tex2Dlod(_wavesSampler, float4((i + 0.5f) / _nbWaves, 0, 0, 0));
 					float phase = wt.y * _Time.y/5 - dot(wt.zw, input.u);
@@ -1528,8 +1496,8 @@ Shader "Custom/customTerrainShader_hlsl" {
 					float c = cos(phase);
 					float overk = 9.81 / (wt.y * wt.y);
 
-					float wp = smoothstep(_nyquistMin, _nyquistMax, (2.0 *  3.141592657) * overk / _lods.y);
-					float wn = smoothstep(_nyquistMin, _nyquistMax, (2.0 *  3.141592657) * overk / _lods.y * input.lod);
+					float wp = smoothstep(_nyquistMin, _nyquistMax, (M_2PI) * overk / _lods.y);
+					float wn = smoothstep(_nyquistMin, _nyquistMax, (M_2PI) * overk / _lods.y * input.lod);
 
 					float3 factor = (1.0 - wp) * wn * wt.x * float3(wt.zw * overk, 1.0);
 
@@ -1564,7 +1532,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 
 				float3 Lsky = fresnel * meanSkyRadiance(V.xzy, N, Tx, Ty, sigmaSq) * saturate(Shadows + 0.25);
 
-				float3 Lsea = (1 - fresnel) * lerp(_WaterColor.rgb, satellite.rgb, 0.5) * _WaterColor.a * Esky(L.y * saturate(Shadows + 0.1))/ 3.141592657;
+				float3 Lsea = (1 - fresnel) * lerp(_WaterColor.rgb, satellite.rgb, 0.5) * _WaterColor.a * Esky(L.y * saturate(Shadows + 0.1)) * M_1_PI;
 
 				float4 WaterColor = float4(Lsea + Lsky + Lsun, 1.0);
 
@@ -1611,9 +1579,7 @@ Shader "Custom/customTerrainShader_hlsl" {
 					shore.Roughness = 1;
 					return lerp(WaterColor, microfacet(shore), pow(saturate(ShoreHeight + 0.3 - dP), 2));
 				}
-			} 
-
-			
+			} 			
 
 			void findMaxH(float rockH, float gravelH, float dirtH, float ForestH, float grassH, float snowH, float commonH, out float maxH0, out float maxH1) {
 				maxH0 = max(rockH, gravelH);
@@ -1735,7 +1701,11 @@ Shader "Custom/customTerrainShader_hlsl" {
 						}
 					}
 
-					//return microfacet(Gravel(0, 0));
+					/*
+					satmat.Albedo = 1;
+					satmat.Roughness = 0.8;
+					return microfacet(satmat);
+					*/
 
 					Noise = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 0)));
 					Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 1)));
@@ -1745,12 +1715,12 @@ Shader "Custom/customTerrainShader_hlsl" {
 					if (_enableNoise == 1) {
 						WSGT = saturate(WSGT+float4(0, 0, 0.75*Noise_Classes.w, 0));
 					}
-					WSGT = saturate(sin(3.141592 * (WSGT - 0.5))*0.5 + 0.5);
+					WSGT = saturate(sin(M_PI * (WSGT - 0.5))*0.5 + 0.5);
 
 					WSGT.w = (1.0 - WSGT.w);
 					if (Depth < _LODDistance3) {
 						DGR = tex2D(_ClassesDGR, input.uv);
-						DGR = saturate(sin(3.141592 * (DGR - 0.5))*0.5 + 0.5);
+						DGR = saturate(sin(M_PI * (DGR - 0.5))*0.5 + 0.5);
 
 						if (_SlopeModifierEnabled == 1) {
 							float slopeRockModifier = saturate((-Normal.y + _SlopeModifierThreshold) * _SlopeModifierStrength);

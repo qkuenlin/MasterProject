@@ -737,6 +737,11 @@ public class MaterialManager : MonoBehaviour
                 m.SetColor("_WaterlDebug", WaterDebug);
                 m.SetColor("_ForestDebug", ForestDebug);
                 m.SetColor("_SnowDebug", SnowDebug);
+
+
+                float samples = Mathf.Pow(2.0f, QualitySettings.GetQualityLevel()+1);
+                if (samples == 128) samples = 2048;
+                m.SetInt("_LightSampleCount", (int)samples);
             }
         }
 
