@@ -376,11 +376,11 @@ MonoBehaviour:
   EnableNoiseLum: 0
   NoiseLumScale: 17
   NoiseLumStrength: 0.5
-  debug: 1
+  debug: 0
   Parallax: 0
   Tessellation: 0
   EnableDetails: 1
-  EnableNormalMaps: 0
+  EnableNormalMaps: 1
   HeightBasedMix: 0
   AmbientLightColor: {r: 0.7311321, g: 0.93253005, b: 1, a: 0}
   AmbientLightStrength: 0.4
@@ -662,7 +662,7 @@ MonoBehaviour:
   amplitude: 0.2
   nyquistMin: 0.3
   nyquistMax: 8
-  waterColor: {r: 0.17999998, g: 0.9, b: 0.81490916, a: 0.19607843}
+  waterColor: {r: 0.13139997, g: 0.6061332, b: 0.65699995, a: 0.101960786}
   waterRoughness: 0
   debug: 0
   gridSize: 128
@@ -986,7 +986,7 @@ Camera:
   m_ClearFlags: 1
   m_BackGroundColor: {r: 0, g: 0.38815784, b: 1, a: 0}
   m_projectionMatrixMode: 1
-  m_SensorSize: {x: 36, y: 24}
+  m_SensorSize: {x: 70, y: 51}
   m_LensShift: {x: 0, y: 0}
   m_FocalLength: 50
   m_NormalizedViewPortRect:
@@ -997,7 +997,7 @@ Camera:
     height: 1
   near clip plane: 0.5
   far clip plane: 3000
-  field of view: 55.32518
+  field of view: 55
   orthographic: 0
   orthographic size: 5
   m_Depth: -1

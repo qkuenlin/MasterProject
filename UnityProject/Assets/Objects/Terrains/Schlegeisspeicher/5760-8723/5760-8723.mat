@@ -4,7 +4,7 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: 5760-8723
   m_Shader: {fileID: 4800000, guid: a4edd829e5fd32149a2074d647e61218, type: 3}
@@ -87,4 +87,4 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _WaterColor: {r: 0.17999998, g: 0.9, b: 0.81490916, a: 0.19607843}
+    - _WaterColor: {r: 0.13139997, g: 0.6061332, b: 0.65699995, a: 0.101960786}

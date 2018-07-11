@@ -738,6 +738,7 @@ public class MaterialManager : MonoBehaviour
                 m.SetColor("_ForestDebug", ForestDebug);
                 m.SetColor("_SnowDebug", SnowDebug);
 
+                m.SetFloat("_2TanFOVHeight", Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView / 2) / Camera.main.pixelHeight);
 
                 float samples = Mathf.Pow(2.0f, QualitySettings.GetQualityLevel()+1);
                 if (samples == 128) samples = 2048;
