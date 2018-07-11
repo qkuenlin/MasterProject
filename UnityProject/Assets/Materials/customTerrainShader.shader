@@ -836,9 +836,9 @@
 				float4 Indirect = 0;
 
 				float r = _LightSampleCount / 72.0f;
-				r = 1 - r * r;
+				r = saturate(1 - r * r);
+
 				/* INDIRECT ILLUMINATION */
-				//[unroll(16)]
 				[loop]
 				for (int i = 0; i < _LightSampleCount; i++) {
 					float2 u = Hammersley2d(i, _LightSampleCount);
@@ -854,7 +854,7 @@
 					float LdotH = saturate(dot(L, H));
 					float3 NdotH = saturate(dot(N, H));
 
-					if (NdotL > 0) {
+					if (NdotL > 0 && NdotV > 0 && weightOverPdf > 0) {
 						//Diffuse
 						float3 Fd = m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness);
 
@@ -868,7 +868,7 @@
 							Fr = D * F * Vis * M_1_PI;
 						}
 						float4 sky = SampleReflection(L.xyz, r);
-						Indirect += float4((Fd + (1-m.Roughness) * Fr), 1.0);
+						Indirect += float4((Fd + (1-m.Roughness) * Fr) * sky * weightOverPdf, 1.0);
 					}
 				}		
 
