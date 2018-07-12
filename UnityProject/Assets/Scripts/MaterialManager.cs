@@ -315,6 +315,8 @@ public class MaterialManager : MonoBehaviour
     private bool _first;
     private bool first;
 
+    public float QualityModifer = 1;
+
     // Use this for initialization
     void Awake()
     {
@@ -738,7 +740,7 @@ public class MaterialManager : MonoBehaviour
                 m.SetColor("_ForestDebug", ForestDebug);
                 m.SetColor("_SnowDebug", SnowDebug);
 
-                m.SetFloat("_2TanFOVHeight", Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView / 2) / Camera.main.pixelHeight);
+                m.SetFloat("_2TanFOVHeight", QualityModifer * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView / 2) / Camera.main.pixelHeight);
 
                 float samples = Mathf.Pow(2.0f, QualitySettings.GetQualityLevel()+1);
                 if (samples == 128) samples = 2048;

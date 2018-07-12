@@ -1883,15 +1883,15 @@
 								Color = ColorH;
 							else
 								Color = ColorB;
-						}
 
-						if (Depth >= _LODDistance3 * (1 - blendSize)) {
-							Color = lerp(Color, WSGT.x > 0.1 ? Water(input, 1) : microfacet(satmat), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
-						}
-						
-					}
+
+							if (Depth >= _LODDistance3 * (1 - blendSize)) {
+								Color = lerp(Color, microfacet(satmat), (Depth - _LODDistance3 * (1 - blendSize)) / (_LODDistance3*blendSize));
+							}
+						}						
+					}					
 					else if (WSGT.x > 0.1) {
-						Color = 0;//Water(input, 1);
+						Color = Water(input, 1);
 					}
 					else if (Depth < _LODDistance4) {
 						Color = microfacet(satmat);
