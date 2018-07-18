@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[ExecuteInEditMode]
 [SerializeField]
 public class MaterialManager : MonoBehaviour
 {
@@ -690,7 +691,7 @@ public class MaterialManager : MonoBehaviour
                 m.SetFloat("_DirtRoughnessModifierStrength", DirtRoughnessModifierStrength);
                 m.SetFloat("_DirtDetailStrength", DirtDetailStrength);
 
-                m.SetFloat("_DirtHeightStrength", DirtDetailStrength);
+                m.SetFloat("_DirtHeightStrength", DirtHeightStrength);
                 m.SetFloat("_DirtHeightOffset", DirtHeightOffset);
 
                 m.SetFloat("_GrassUVDetailMultiply", GrassDetailUVMultiply);
@@ -742,9 +743,13 @@ public class MaterialManager : MonoBehaviour
 
                 m.SetFloat("_2TanFOVHeight", QualityModifer * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView / 2) / Camera.main.pixelHeight);
 
-                float samples = Mathf.Pow(2.0f, QualitySettings.GetQualityLevel()+1);
-                if (samples == 128) samples = 2048;
-                m.SetInt("_LightSampleCount", (int)samples);
+                int n_samples = (int)Mathf.Lerp(8.0f, 128.0f, Mathf.Pow(1.0f*QualitySettings.GetQualityLevel() / 6.0f, 2.0f));
+
+                m.SetInt("_LightSampleCount", n_samples);
+                float r = (n_samples - 8.0f) / 120.0f;
+                m.SetFloat("_SkyMipMapLevel", 1.0f - r);
+
+                Debug.Log(n_samples + "  " + (1.0f - r));                
             }
         }
 

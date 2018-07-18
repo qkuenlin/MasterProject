@@ -3,6 +3,13 @@
 		_ClassesDGR("Segmentation Image Dirt/Gravel/Rock", 2D) = "white" {}
 		_ClassesWSGT("Segmentation Image Water/Snow/Grass/Forest", 2D) = "white" {}
 		_Sat("Satellite Image", 2D) = "white" {}
+		_ShaderTest("Shader Test", Range(0, 1)) = 0
+		_Color("Color", Color) = (1, 1, 1, 1)
+		_Roughness("Roughness", Range(0, 1)) = 0.5
+		_GlobalIllumination("Global Illumination", Range(0,1)) = 1
+		_Specular("Specular", Range(0, 1)) = 1
+		_LightSampleCount("Light Sample Count for GI", Int) = 16
+
 	}
 	SubShader
 	{
@@ -31,18 +38,19 @@
 			//#pragma geometry geometry
 			#pragma require 2darray
 			#pragma multi_compile_fwdbase
-
+			#pragma multi_compile DEBUG
 
 			// Use shader model 3.0 target, to get nicer looking lighting
 			#pragma target 5.0
 
-			float4x4 screenToCamera;
-			float4x4 cameraToWorld;
+			int _ShaderTest;
+			int _GlobalIllumination;
+			int _Specular;
+			float _Roughness;
+			float4 _Color;
 
 			/* WATER PARAMETERS*/
-			half _WaterRoughness;
 			fixed4 _WaterColor;
-			int4 GRID_SIZE;
 			float4 _lods;
 			float _nyquistMin = 1.0f;
 			float _nyquistMax = 1.5f;
@@ -73,19 +81,9 @@
 			int _N_NOISE;
 			int _enableNormalMap;
 			int _enableDetails;
-			int _heightBasedMix;
-			int _tesselation;
 			int _parallax;
 
 			float _SatelliteProportion;
-			int _enableNoise;
-			float _noiseStrength;
-
-			int _enableNoiseHue;
-			float _noiseHueStrength;
-
-			int _enableNoiseLum;
-			float _noiseLumStrength;
 
 			half _RockNormalDetailStrength;
 			half _RockRoughnessModifier;
@@ -168,7 +166,7 @@
 			float _2TanFOVHeight;
 
 			int _LightSampleCount;
-
+			float _SkyMipMapLevel;
 
 			struct v2f
 			{
@@ -205,13 +203,16 @@
 				return bits;
 #endif
 			}
+
 			//-----------------------------------------------------------------------------
+
 			float RadicalInverse_VdC(uint bits)
 			{
 				return float(ReverseBits32(bits)) * 2.3283064365386963e-10; // 0x100000000
 			}
 
 			//-----------------------------------------------------------------------------
+
 			float2 Hammersley2d(uint i, uint maxSampleCount)
 			{
 				return float2(float(i) / float(maxSampleCount), RadicalInverse_VdC(i));
@@ -245,20 +246,6 @@
 				float3 upVector = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
 				tangentX = normalize(cross(upVector, N));
 				tangentY = cross(N, tangentX);
-			}
-
-			float RockH(v2f input, float weight) {
-				float hL = (UNITY_SAMPLE_TEX2DARRAY_LOD(_HeightTextures, float3(input.uv*_RockUVLargeMultiply, 0.0 + _N_NOISE),0)).r;
-				return ((hL)*_RockHeightStrength / (2.0) + _RockHeightOffset) * weight;
-			}
-
-			float SnowH(v2f input, float weight) {		
-				float hL = (UNITY_SAMPLE_TEX2DARRAY_LOD(_HeightTextures, float3(input.uv*_SnowUVLargeMultiply, 2.0 + _N_NOISE),0)).r;
-				return ((hL)*_SnowHeightStrength / (2.0) + _SnowHeightOffset) * weight;
-			}
-
-			appdata_tan vert(appdata_tan v) {
-				return v;
 			}
 
 			v2f vertex(appdata_tan v)
@@ -343,91 +330,6 @@
 
 				return(o);
 			}
-
-			/*
-			struct TesselationFactors
-			{
-				float edge[3] : SV_TessFactor;
-				float inside : SV_InsideTessFactor;
-			};
-
-			float TesselationEdgeFactor(float3 p0, float3 p1)
-			{
-				float edgeLength = distance(p0, p1);
-
-				float3 edgeCenter = (p0 + p1)*0.5;
-				float viewDistance = distance(edgeCenter, _WorldSpaceCameraPos);
-				return clamp(pow(64.0*edgeLength /viewDistance, 2), 1, 1024);
-			}
-
-			TesselationFactors MyPatchConstantFunction(InputPatch<appdata_tan, 3> patch)
-			{
-				TesselationFactors f;
-
-				if (_tesselation == 0) {
-					f.edge[0] = 1;
-					f.edge[1] = 1;
-					f.edge[2] = 1;
-					f.inside = 1;
-				}
-				else {
-					float3 p0 = mul(unity_ObjectToWorld, patch[0].vertex).xyz;
-					float3 p1 = mul(unity_ObjectToWorld, patch[1].vertex).xyz;
-					float3 p2 = mul(unity_ObjectToWorld, patch[2].vertex).xyz;
-
-					f.edge[0] = TesselationEdgeFactor(p1, p2);
-					f.edge[1] = TesselationEdgeFactor(p2, p0);
-					f.edge[2] = TesselationEdgeFactor(p0, p1);
-					f.inside = (TesselationEdgeFactor(p1, p2) + TesselationEdgeFactor(p2, p0) + TesselationEdgeFactor(p0, p1)) / 3.0;
-				}
-				return f;
-			}
-
-			[UNITY_domain("tri")]
-			[UNITY_outputcontrolpoints(3)]
-			[UNITY_outputtopology("triangle_cw")]
-			[UNITY_partitioning("integer")]
-			[UNITY_patchconstantfunc("MyPatchConstantFunction")]
-			appdata_tan hull(InputPatch<appdata_tan, 3> patch, uint id : SV_OutputControlPointID) {
-				return patch[id];
-			}
-
-			[UNITY_domain("tri")]
-			v2f domain(TesselationFactors factors, OutputPatch<appdata_tan, 3> patch, float3 barycentricCoordinates: SV_DomainLocation) {
-				appdata_tan data;
-				#define MY_DOMAIN_PROGRAM_INTEROPLATE(fieldName) data.fieldName = patch[0].fieldName * barycentricCoordinates.x + patch[1].fieldName * barycentricCoordinates.y + patch[2].fieldName * barycentricCoordinates.z;
-
-				MY_DOMAIN_PROGRAM_INTEROPLATE(vertex);
-				MY_DOMAIN_PROGRAM_INTEROPLATE(normal);
-				MY_DOMAIN_PROGRAM_INTEROPLATE(tangent);
-				MY_DOMAIN_PROGRAM_INTEROPLATE(texcoord);
-
-				return vertex(data);
-			}
-
-			struct InterpolatorGeometry {
-				v2f data;
-				float2 barycentric : TEXCOORD15;
-			};
-
-			[maxvertexcount(3)]
-			void geometry(triangle v2f i[3], inout TriangleStream<InterpolatorGeometry> stream) {
-				InterpolatorGeometry o0, o1, o2;			
-
-				o0.data = i[0];
-				o1.data = i[1];
-				o2.data = i[2];
-
-				o0.barycentric = float2(1, 0);
-				o1.barycentric = float2(0, 1);
-				o2.barycentric = float2(0, 0);
-
-				stream.Append(o0);
-				stream.Append(o1);
-				stream.Append(o2);
-
-			}
-			*/
 			
 			// Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
 			// See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
@@ -445,10 +347,7 @@
 			float3 VertexNormal;
 
 			float Depth;
-			float LOD;
 			float4 satellite;
-			float4 Noise;
-			float4 Noise_Classes;
 			float2 UV;
 
 			float blendSize;
@@ -458,8 +357,6 @@
 			float3 tspace0;
 			float3 tspace1;
 			float3 tspace2;
-
-			float DetailMaterialWeight;
 
 			float Shadows;
 
@@ -474,41 +371,6 @@
 			float rockTexLod;
 			float commonTexLod;
 
-
-
-			// ----------------------------------------------------------------------------
-			// PHYSICAL MODEL PARAMETERS
-			// ----------------------------------------------------------------------------
-
-			float Rg = 6360000.0;
-			float Rt = 6420000.0;
-			float RL = 6421000.0;
-
-			float AVERAGE_GROUND_REFLECTANCE = 0.1;
-
-			// Rayleigh
-			float HR = 8000.0;
-			float3 betaR = float3(5.8e-6, 1.35e-5, 3.31e-5);
-
-			// Mie
-			// DEFAULT
-			/*
-			float HM = 1200;
-			float3 betaMSca = vec3(4e-6);
-			float3 betaMEx = betaMSca / 0.9;
-			float mieG = 0.8;*/
-			// CLEAR SKY
-			/*const float HM = 1.2 * SCALE;
-			const vec3 betaMSca = vec3(20e-3) / SCALE;
-			const vec3 betaMEx = betaMSca / 0.9;
-			const float mieG = 0.76;*/
-			// PARTLY CLOUDY
-			/*const float HM = 3.0 * SCALE;
-			const vec3 betaMSca = vec3(3e-3) / SCALE;
-			const vec3 betaMEx = betaMSca / 0.9;
-			const float mieG = 0.65;*/
-
-			float3 earthPos = float3(0.0, 0.0, 6360010.0);
 
 			struct Material {
 				float4 Albedo;
@@ -529,46 +391,6 @@
 				half mip = perceptualRoughnessToMipmapLevel(roughness);
 
 				return float4(DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, wo, mip), unity_SpecCube0_HDR), 1.0);
-			}
-
-			float3 LAB2RGB(float3 color) {
-				float y = (color.x + 16.0) / 116.0;
-				float x = color.y / 500.0 + y;
-				float z = y - color.z / 200.0;
-
-				x = 0.95047 * ((x * x * x > 0.008856) ? x * x * x : (x - 16.0 / 116.0) / 7.787);
-				y = 1.00000 * ((y * y * y > 0.008856) ? y * y * y : (y - 16.0 / 116.0) / 7.787);
-				z = 1.08883 * ((z * z * z > 0.008856) ? z * z * z : (z - 16.0 / 116.0) / 7.787);
-
-				float r = x * 3.2406 + y * -1.5372 + z * -0.4986;
-				float g = x * -0.9689 + y * 1.8758 + z * 0.0415;
-				float b = x * 0.0557 + y * -0.2040 + z * 1.0570;
-
-				r = (r > 0.0031308) ? (1.055 * pow(r, 1.0 / 2.4) - 0.055) : 12.92 * r;
-				g = (g > 0.0031308) ? (1.055 * pow(g, 1.0 / 2.4) - 0.055) : 12.92 * g;
-				b = (b > 0.0031308) ? (1.055 * pow(b, 1.0 / 2.4) - 0.055) : 12.92 * b;
-
-				return saturate(float3(r, g, b));
-			}
-
-			float3 RGB2LAB(float3 color) {
-				float r = color.r;
-				float g = color.g;
-				float b = color.b;
-
-				r = (r > 0.04045) ? pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
-				g = (g > 0.04045) ? pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
-				b = (b > 0.04045) ? pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
-
-				float x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
-				float y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
-				float z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
-
-				x = (x > 0.008856) ? pow(x, 1.0 / 3.0) : (7.787 * x) + 16.0 / 116.0;
-				y = (y > 0.008856) ? pow(y, 1.0 / 3.0) : (7.787 * y) + 16.0 / 116.0;
-				z = (z > 0.008856) ? pow(z, 1.0 / 3.0) : (7.787 * z) + 16.0 / 116.0;
-
-				return float3(116.0 * y - 16.0, 500.0 * (x - y), 200.0 * (y - z));
 			}
 
 			float3 RGB2HSL(float3 color) {
@@ -621,35 +443,39 @@
 			float4 ColorTransfer(float4 c1, float4 c2, float strength) {
 				return ColorTransfer(c1, c2, float4(0, 0, 0, 0));
 			}
+			
+			float V_SmithGGXCorrelated(float NdotL, float NdotV, float r) {
 
-			float4 ColorPerturbation(float4 c) {
-				float3 hsl = RGB2HSL(c.rgb);
-				hsl.x += Noise.z * _noiseHueStrength;
-				hsl.z = lerp(hsl.z, hsl.z*Noise.w, _noiseLumStrength);
-				float3 rgb = HSL2RGB(hsl);
-				return float4(rgb, 1.0);
-			}
+				float a2 = r * r;
 
-			float V_SmithGGXCorrelated(float NdotL, float NdotV, float alphaG) {
-				float alphaG2 = alphaG * alphaG;
-
-				float Lambda_GGXV = NdotL * sqrt((-NdotV * alphaG2 + NdotV) * NdotV + alphaG2);
-				float Lambda_GGXL = NdotV * sqrt((-NdotL * alphaG2 + NdotL) * NdotL + alphaG2);
+				float Lambda_GGXV = NdotL * sqrt((-NdotV * a2 + NdotV) * NdotV + a2);
+				float Lambda_GGXL = NdotV * sqrt((-NdotL * a2 + NdotL) * NdotL + a2);
 
 				return 0.5f / (Lambda_GGXV + Lambda_GGXL);
 			}
 
-			float D_GGX(float NdotH, float m) {
-				float m2 = m * m;
-				float f = (NdotH * m2 - NdotH) * NdotH + 1;
+			float V_SmithGGX(float NdotL, float NdotV, float r) {
+				float a2 = r * r *r *r;
 
-				return m2 / (f*f);
+				float G1 = 2.0 / (1 + sqrt(1 + a2 * (1 - NdotL * NdotL) / (NdotL*NdotL)));
+				float G2 = 2.0 / (1 + sqrt(1 + a2 * (1 - NdotV * NdotV) / (NdotV*NdotV)));
+
+				return G1 * G1;
+				
 			}
 
-			float F_Schlick(float u) {
+			float D_GGX(float NdotH, float r) {
+				float a = r * r;
+				float a2 = a * a;
+				float f = (NdotH * a2 - NdotH) * NdotH + 1;
+
+				return a2 / (f*f);
+			}
+
+			float F_Schlick(float u, float f0=0) {
 				float m = saturate(1 - u);
 				float m2 = m * m;
-				return m2 * m2 * m;
+				return f0 + (1-f0) * m2 * m2 * m;
 			}
 
 			void ImportanceSampleCosDir(float2 u,
@@ -667,6 +493,64 @@
 				L = float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 				// Local to world
 				L = tangentX * L.x + tangentY * L.y + N * L.z;
+			}
+
+			//-------------------------------------------------------------------------------------
+			void ImportanceSampleGGXDir(float2 u,
+				float3 V,
+				float3 N,
+				float3 tangentX,
+				float3 tangentY,
+				float roughness,
+				out float3 H,
+				out float3 L)
+			{
+				// GGX NDF sampling
+				float cosThetaH = sqrt((1.0f - u.x) / (1.0f + (roughness * roughness - 1.0f) * u.x));
+				float sinThetaH = sqrt(max(0.0f, 1.0f - cosThetaH * cosThetaH));
+				float phiH = UNITY_TWO_PI * u.y;
+
+				// Transform from spherical into cartesian
+				H = float3(sinThetaH * cos(phiH), sinThetaH * sin(phiH), cosThetaH);
+				// Local to world
+				H = tangentX * H.x + tangentY * H.y + N * H.z;
+
+				// Convert sample from half angle to incident angle
+				L = 2.0f * dot(V, H) * H - V;
+			}
+
+			// weightOverPdf return the weight (without the Fresnel term) over pdf. Fresnel term must be apply by the caller.
+			void ImportanceSampleGGX(
+				float2 u,
+				float3 V,
+				float3 N,
+				float3 tangentX,
+				float3 tangentY,
+				float roughness,
+				float NdotV,
+				out float3 L,
+				out float VdotH,
+				out float NdotL,
+				out float weightOverPdf)
+			{
+				float3 H;
+				ImportanceSampleGGXDir(u, V, N, tangentX, tangentY, roughness, H, L);
+
+				float NdotH = saturate(dot(N, H));
+				// Note: since L and V are symmetric around H, LdotH == VdotH
+				VdotH = saturate(dot(V, H));
+				NdotL = saturate(dot(N, L));
+
+				// Importance sampling weight for each sample
+				// pdf = D(H) * (N.H) / (4 * (L.H))
+				// weight = fr * (N.L) with fr = F(H) * G(V, L) * D(H) / (4 * (N.L) * (N.V))
+				// weight over pdf is:
+				// weightOverPdf = F(H) * G(V, L) * (L.H) / ((N.H) * (N.V))
+				// weightOverPdf = F(H) * 4 * (N.L) * V(V, L) * (L.H) / (N.H) with V(V, L) = G(V, L) / (4 * (N.L) * (N.V))
+				// F is apply outside the function
+
+				float Vis = SmithJointGGXVisibilityTerm(NdotL, NdotV, roughness);
+				weightOverPdf = 4.0f * Vis * NdotL * VdotH / NdotH;
 			}
 
 			// ----------------------------------------------------------------------------
@@ -695,24 +579,6 @@
 				weightOverPdf = 1.0f;
 			}
 
-			float Geom(float3 v, float3 H, float3 N, float roughness)
-			{
-				float cosTheta = dot(v, N);
-				float tmp = 1 - cosTheta * cosTheta;
-
-				if (tmp <= 0) return 0.0;
-				float tanTheta = abs(sqrt(tmp) / cosTheta);
-
-				if (dot(v, H) / dot(v, N) <= 0) {
-					return 0.0;
-				}
-
-				float b = 1.0f / (roughness * tanTheta);
-				if (b > 1.6) return 1.0f;
-
-				return (3.535f*b + 2.181f*b*b) / (1.0f + 2.276f*b + 2.577f*b*b);
-			}
-		
 			float meanFresnel(float cosThetaV, float sigmaV) {
 				return pow(1.0 - cosThetaV, 5.0 * exp(-2.69 * sigmaV)) / (1.0 + 22.7 * pow(sigmaV, 1.5));
 			}
@@ -781,10 +647,6 @@
 				N.x = dot(tspace0, m.Normal.xyz);
 				N.y = dot(tspace1, m.Normal.xyz);
 				N.z = dot(tspace2, m.Normal.xyz);
-				
-				float cosThetaO = dot(L, N);
-				float cosThetaI = dot(V, N);
-				float cosThetaH = dot(H, N);
 
 				float NdotV = abs(dot(N, V)) + 1e-5f;
 
@@ -803,58 +665,68 @@
 						Fd = m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness);
 
 						//Specular
-						float3 F = F_Schlick(LdotH);
-						float Vis = V_SmithGGXCorrelated(NdotV, NdotL, m.Roughness);
+						float3 F = F_Schlick(LdotH, 0.04);
+						float G = V_SmithGGXCorrelated(NdotV, NdotL, 0.5 + m.Roughness / 2.0);
 						float D = D_GGX(NdotH, m.Roughness);
-						Fr = D * F * Vis * M_1_PI;
+						Fr = D * F * G * M_1_PI * NdotL;
 					}
 
-					Direct = float4(_LightColor0 * (Fd +(1-m.Roughness)*Fr) * Shadows, 1.0);
+					Direct = float4(_LightColor0 * (Fd + Fr) * Shadows, 1.0);
 				}
-
-				float3 tangentX, tangentY;
-				GetLocalFrame(N, tangentX, tangentY);
-				float2 randNum = InitRandom(N.xy * 0.5f + 0.5f);
 				float4 Indirect = 0;
 
-				float r = _LightSampleCount / 72.0f;
-				r = saturate(1 - r * r);
+				if (_GlobalIllumination == 1) {
+					float3 tangentX, tangentY;
+					GetLocalFrame(N, tangentX, tangentY);
 
-				/* INDIRECT ILLUMINATION */
-				[loop]
-				for (int i = 0; i < _LightSampleCount; i++) {
-					float2 u = Hammersley2d(i, _LightSampleCount);
-					u = frac(u + randNum + 0.5f);
-					float3 L;
-					float NdotL;
-					float weightOverPdf=0;
+					float2 randNum = InitRandom(N.xz * 0.5f + 0.5f);
 
-					// for Disney we still use a Cosine importance sampling, true Disney importance sampling imply a look up table
-					ImportanceSampleLambert(u, N, tangentX, tangentY, L, NdotL, weightOverPdf);
+					float r = saturate((_SkyMipMapLevel + m.Roughness)/2);
 
-					float3 H = normalize(V + L);
-					float LdotH = saturate(dot(L, H));
-					float3 NdotH = saturate(dot(N, H));
+					float3 Fd = 0;
+					float3 Fr = 0;
 
-					if (NdotL > 0 && NdotV > 0 && weightOverPdf > 0) {
+					/* INDIRECT ILLUMINATION */
+					/* DIFFUSE */
+					[loop]
+					for (int i = 0; i < _LightSampleCount; i++) {
+						float2 u = Hammersley2d(i, _LightSampleCount);
+						u = frac(u + randNum + 0.5f);
+						float3 L;
+						float NdotL;
+						float weightOverPdf = 0;
+
 						//Diffuse
-						float3 Fd = m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness);
+						// Need less samples
+						if (i < _LightSampleCount / 4) {
+							// for Disney we still use a Cosine importance sampling, true Disney importance sampling imply a look up table
+							ImportanceSampleLambert(u, N, tangentX, tangentY, L, NdotL, weightOverPdf);
 
-						//Specular
-						float3 Fr = 0;
-						
-						if (_LightSampleCount >= 2048) {
-							float3 F = F_Schlick(LdotH);
-							float Vis = V_SmithGGXCorrelated(NdotV, NdotL, m.Roughness);
-							float D = D_GGX(NdotH, m.Roughness);
-							Fr = D * F * Vis * M_1_PI;
+							if (NdotL > 0.0f) {
+								float3 H = normalize(V + L);
+								float LdotH = saturate(dot(L, H));
+								float3 NdotH = saturate(dot(N, H));
+
+								float4 sky = SampleReflection(L.xyz, r);
+								Fd += m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness) * weightOverPdf * sky;
+							}
 						}
-						float4 sky = SampleReflection(L.xyz, r);
-						Indirect += float4((Fd + (1-m.Roughness) * Fr) * sky * weightOverPdf, 1.0);
-					}
-				}		
 
-				Indirect /= _LightSampleCount;
+						/* DIFFUSE */
+
+						if (_Specular == 1) {
+							float VdotH;
+							ImportanceSampleGGX(u, V, N, tangentX, tangentY, m.Roughness, NdotV, L, VdotH, NdotL, weightOverPdf);
+
+							if (NdotL > 0.0f) {
+								float4 sky = SampleReflection(L.xyz, r);
+								Fr += F_Schlick(VdotH, 0.0) * weightOverPdf * sky;
+							}
+						}
+					}
+
+					Indirect = float4((4 * Fd + Fr)/_LightSampleCount, 1);
+				}
 
 				return saturate(Direct + Indirect);				
 			}
@@ -903,8 +775,6 @@
 						roughness = (roughness + roughnessD) / 2;
 					}
 				}
-
-				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
 
 				roughness = lerp(roughness, _GravelRoughnessModifier, _GravelRoughnessModifierStrength);
 
@@ -965,8 +835,6 @@
 					}
 				}
 
-				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
-
 				roughness = lerp(roughness, _GravelRoughnessModifier, _GravelRoughnessModifierStrength);
 
 				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
@@ -1021,8 +889,6 @@
 					}
 				}
 
-				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
-
 				roughness = lerp(roughness, _RockRoughnessModifier, _RockRoughnessModifierStrength);
 
 				float wetratio = saturate(2.0*wetness - pow(1.2*(max(height, height2)), 2));
@@ -1052,8 +918,6 @@
 				float4 albedo = lerp(ColorTransfer(satellite, albedoL, albedoLM), albedoL, 0.7);
 
 				float3 N = _enableNormalMap ? lerp(float3(0, 0, 1), UnpackNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalTextures, float3(UV*_ForestUVLargeMultiply, 11))), _ForestNormalLargeStrength) : float3(0, 0, 1);
-
-				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
 
 				roughness = lerp(roughness, _ForestRoughnessModifier, _ForestRoughnessModifierStrength);
 
@@ -1109,8 +973,6 @@
 					}
 				}
 
-				if (_enableNoiseHue) albedo = ColorPerturbation(albedo);
-
 				roughness = lerp(roughness, _GrassRoughnessModifier, _GrassRoughnessModifierStrength);
 
 				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
@@ -1131,35 +993,42 @@
 					m.Albedo = _SnowDebug;
 					return m;
 				}
-				float detailStrength = _enableDetails ? lerp(0, _SnowDetailStrength, LOD) : 0;
 
-				float roughnessL = UNITY_SAMPLE_TEX2DARRAY(_ColorTextures, float3(UV*_SnowUVLargeMultiply, 2.0)).x;
+				float roughness = UNITY_SAMPLE_TEX2DARRAY(_ColorTextures, float3(UV*_SnowUVLargeMultiply, 4)).x;
 
-				float roughnessD = 1.0;
+				float4 albedo = lerp(float4(1,1,1,1), satellite, 0.7);
 
-				if (detailStrength > 0) {
-					roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorTextures, float3(UV*_SnowUVDetailMultiply, 3.0), snowTexLod).x;
-				}
-				float4 albedo = lerp(float4(1,1,1,1), satellite, 0.5);//float4(1, 1, 1, 1);
+				float3 N = _enableNormalMap ? lerp(float3(0, 0, 1), UnpackNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalTextures, float3(UV*_SnowUVLargeMultiply, 2))), _SnowNormalLargeStrength) : float3(0, 0, 1);
 
-				float4 roughness = (roughnessL + roughnessD * detailStrength);
+				if (_enableDetails && (Depth < _LODDistance1)) {
+					float roughnessD = UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorTextures, float3(UV*_SnowUVDetailMultiply, 5), snowTexLod).x;
 
-				float3 N = float3(0, 0, 1);
+					float4 colorD = float4(1,1,1,1);
 
-				if (_enableNormalMap) {
-					float3 NL = UnpackNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalTextures, float3(UV*_SnowUVLargeMultiply, 2)));
-					NL = normalize(lerp(float3(0, 0, 1), NL, _SnowNormalLargeStrength));
+					float3 NormalD = _enableNormalMap ? UnpackNormal(UNITY_SAMPLE_TEX2DARRAY_LOD(_NormalTextures, float3(UV*_SnowUVDetailMultiply, 3), snowTexLod)) : float3(0, 0, 1);
 
-					float3 ND = UnpackNormal(UNITY_SAMPLE_TEX2DARRAY_LOD(_NormalTextures, float3(UV*_SnowUVDetailMultiply, 3), snowTexLod));
-					ND = normalize(lerp(float3(0, 0, 1), ND, _SnowNormalDetailStrength));
+					if (Depth >= _LODDistance1 * (1 - blendSize))
+					{
+						float w = (Depth - _LODDistance1 * (1 - blendSize)) / (_LODDistance1*blendSize);
+						albedo = lerp(colorD, albedo, w);
+						N = blendNormal(N, NormalD, 1 - w);
+						roughness = lerp((roughness + roughnessD) / 2, roughness, w);
+					}
+					else
+					{
+						albedo = colorD;						
 
-					N = blendNormal(NL, ND, detailStrength);
+						N = blendNormal(N, NormalD, 1);
+						roughness = (roughness + roughnessD) / 2;
+					}
 				}
 
 				roughness = lerp(roughness, _SnowRoughnessModifier, _SnowRoughnessModifierStrength);
 
-				float wetratio = saturate(1-weight);
+				float wetratio = saturate(pow(1-weight, 2));
 				roughness = lerp(roughness, 0.1, wetratio);
+
+				albedo *= lerp(1.0, 0.6, wetratio);
 
 				Material m;
 				m.Albedo = albedo;
@@ -1604,6 +1473,21 @@
 				L = normalize(input.lightDirection.xyz);
 				H = normalize(V + L);
 				UV = input.uv;
+
+				if (_ShaderTest == 1) {
+					Normal = VertexNormal;
+
+					tspace0 = float3(Tangent.x, Biangent.x, Normal.x);
+					tspace1 = float3(Tangent.y, Biangent.y, Normal.y);
+					tspace2 = float3(Tangent.z, Biangent.z, Normal.z);
+
+					Material def;
+					def.Albedo = _Color;
+					def.Roughness = _Roughness;
+					def.Normal = float3(0, 0, 1);
+
+					return microfacet(def);
+				}
 				
 				satellite = tex2D(_Sat, input.uv);
 
@@ -1657,23 +1541,9 @@
 							return float4(0, 0, 0, 0);
 						}
 					}
-
-					/*
-					satmat.Albedo = 1;
-					satmat.Roughness = 0.8;
-					return microfacet(satmat);
-					*/
-
-					//return microfacet(Gravel(0, 0));
-
-					Noise = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 0)));
-					Noise_Classes = (UNITY_SAMPLE_TEX2DARRAY(_HeightTextures, float3(input.uv, 1)));
-
+					
 					float4 Color = float4(0, 0, 0, 1.0);					
 					WSGT = tex2D(_ClassesWSGT, input.uv);
-					if (_enableNoise == 1) {
-						WSGT = saturate(WSGT+float4(0, 0, 0.75*Noise_Classes.w, 0));
-					}
 					WSGT = saturate(sin(M_PI * (WSGT - 0.5))*0.5 + 0.5);
 
 					WSGT.w = (1.0 - WSGT.w);
@@ -1703,7 +1573,7 @@
 						WSGT /= sum;	
 
 						float VdotN = dot(V, VertexNormal);
-						if (VdotN < 1) {
+						if (VdotN < 1.0 - 1e-7) {
 							float theta = M_PI / 2.0 - acos(VdotN);
 							float m_1_cosTheta = 1.0 / cos(theta);
 							float tanTheta = tan(theta);
@@ -1721,7 +1591,7 @@
 						else {							
 							satellite = tex2D(_Sat, input.uv);
 
-							wetness = pow(saturate(5.0*WSGT.y), 1.5);
+							wetness = pow(saturate(3.5*WSGT.y), 1.5);
 
 							float4 ColorH = float4(0, 0, 0, 0);
 							float4 ColorB = float4(0, 0, 0, 0);
@@ -1754,7 +1624,7 @@
 									gravelTexLod = floor(gravelTexLod < 0 ? 0 : gravelTexLod);
 								}
 								//Rock
-								if (DGR.z > 0)
+								if (DGR.z > 0 || DGR.y > 0 || DGR.x > 0 || WSGT.z > 0 || (waterH > 0))
 								{
 									rockTexLod = log2(_RockUVDetailMultiply * texLod);
 									rockTexLod = floor(rockTexLod < 0 ? 0 : rockTexLod);
@@ -1763,8 +1633,6 @@
 								if (DGR.y > 0 || DGR.x > 0 || WSGT.z > 0 || (waterH > 0)) {
 									commonTexLod = log2(_CommonUVDetailMultiply * texLod);
 									commonTexLod = floor(commonTexLod < 0 ? 0 : commonTexLod);
-									rockTexLod = log2(_RockUVDetailMultiply * texLod);
-									rockTexLod = floor(rockTexLod < 0 ? 0 : rockTexLod);
 								}
 							}
 
@@ -1900,7 +1768,7 @@
 							Color = lerp(Color, satellite, (Depth - _LODDistance4 * (1 - blendSize)) / (_LODDistance4*blendSize));
 						}
 					}
-					else Color = satellite;
+					else Color = float4(satellite.rgb, 1.0);
 
 
 					return float4(Color.rgb, 1.0);
@@ -1908,7 +1776,8 @@
 				}
 				else
 				{
-					return satellite;
+					return microfacet(satmat);
+					return float4(satellite.rgb, 1.0);
 				}
 
 			}
