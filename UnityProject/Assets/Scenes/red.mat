@@ -6,11 +6,11 @@ Material:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: 5759-8724
+  m_Name: red
   m_Shader: {fileID: 4800000, guid: a4edd829e5fd32149a2074d647e61218, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 1
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -23,11 +23,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ClassesDGR:
-        m_Texture: {fileID: 2800000, guid: 4515ebc816ea62644a1bea263e96efe3, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ClassesWSGT:
-        m_Texture: {fileID: 2800000, guid: e57b86bc4a28dda4e8e23fb7e859a873, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -63,7 +63,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Sat:
-        m_Texture: {fileID: 2800000, guid: 82e2aad710f6f5c4eb664076c1401254, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
@@ -75,21 +75,20 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _LightSampleCount: 64
+    - _LightSampleCount: 128
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _Roughness: 0.5
-    - _ShaderTest: 0
+    - _ShaderTest: 1
+    - _SkyMipMapLevel: 0
     - _SmoothnessTextureChannel: 0
-    - _Specular: 1
+    - _Specular: 0.931
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _WaterRoughness: 0
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _WaterColor: {r: 0.13139997, g: 0.6061332, b: 0.65699995, a: 0.101960786}

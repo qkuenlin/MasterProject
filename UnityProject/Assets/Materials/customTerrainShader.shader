@@ -9,7 +9,6 @@
 		_GlobalIllumination("Global Illumination", Range(0,1)) = 1
 		_Specular("Specular", Range(0, 1)) = 1
 		_LightSampleCount("Light Sample Count for GI", Int) = 16
-
 	}
 	SubShader
 	{
@@ -166,7 +165,6 @@
 			float _2TanFOVHeight;
 
 			int _LightSampleCount;
-			float _SkyMipMapLevel;
 
 			struct v2f
 			{
@@ -192,7 +190,7 @@
 
 			uint ReverseBits32(uint bits)
 			{
-#if 1 // Shader model 5
+#if 0 // Shader model 5
 				return reversebits(bits);
 #else
 				bits = (bits << 16) | (bits >> 16);
@@ -387,10 +385,10 @@
 				return m;
 			}
 
-			float4 SampleReflection(float3 wo, float roughness) {
+			float3 SampleReflection(float3 wo, float roughness) {
 				half mip = perceptualRoughnessToMipmapLevel(roughness);
 
-				return float4(DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, wo, mip), unity_SpecCube0_HDR), 1.0);
+				return DecodeHDR(UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, wo, mip), unity_SpecCube0_HDR);
 			}
 
 			float3 RGB2HSL(float3 color) {
@@ -516,7 +514,7 @@
 				H = tangentX * H.x + tangentY * H.y + N * H.z;
 
 				// Convert sample from half angle to incident angle
-				L = 2.0f * dot(V, H) * H - V;
+				L = reflect(-V, H);
 			}
 
 			// weightOverPdf return the weight (without the Fresnel term) over pdf. Fresnel term must be apply by the caller.
@@ -681,13 +679,13 @@
 
 					float2 randNum = InitRandom(N.xz * 0.5f + 0.5f);
 
-					float r = saturate((_SkyMipMapLevel + m.Roughness)/2);
-
 					float3 Fd = 0;
-					float3 Fr = 0;
 
-					/* INDIRECT ILLUMINATION */
-					/* DIFFUSE */
+					float r = 1.0f * _LightSampleCount / 64.0f;
+					r = saturate(1 - r);
+					r = r * r;
+					r = r * r;
+					/* INDIRECT DIFFUSE */
 					[loop]
 					for (int i = 0; i < _LightSampleCount; i++) {
 						float2 u = Hammersley2d(i, _LightSampleCount);
@@ -696,39 +694,49 @@
 						float NdotL;
 						float weightOverPdf = 0;
 
-						//Diffuse
-						// Need less samples
-						if (i < _LightSampleCount / 4) {
-							// for Disney we still use a Cosine importance sampling, true Disney importance sampling imply a look up table
-							ImportanceSampleLambert(u, N, tangentX, tangentY, L, NdotL, weightOverPdf);
+						// for Disney we still use a Cosine importance sampling, true Disney importance sampling imply a look up table
+						ImportanceSampleLambert(u, N, tangentX, tangentY, L, NdotL, weightOverPdf);
 
-							if (NdotL > 0.0f) {
-								float3 H = normalize(V + L);
-								float LdotH = saturate(dot(L, H));
-								float3 NdotH = saturate(dot(N, H));
+						NdotL = saturate(dot(N, L));
+						if (NdotL > 0 && NdotV > 0) {
+							float3 H = normalize(V + L);
+							float LdotH = saturate(dot(L, H));
+							float3 NdotH = saturate(dot(N, H));
 
-								float4 sky = SampleReflection(L.xyz, r);
-								Fd += m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness) * weightOverPdf * sky;
-							}
-						}
-
-						/* DIFFUSE */
-
-						if (_Specular == 1) {
-							float VdotH;
-							ImportanceSampleGGX(u, V, N, tangentX, tangentY, m.Roughness, NdotV, L, VdotH, NdotL, weightOverPdf);
-
-							if (NdotL > 0.0f) {
-								float4 sky = SampleReflection(L.xyz, r);
-								Fr += F_Schlick(VdotH, 0.0) * weightOverPdf * sky;
-							}
+							float3 sky = SampleReflection(L.xyz, r);
+							Fd += sky * m.Albedo.rgb * Principled_DisneyDiffuse(NdotV, NdotL, LdotH, m.Roughness) * weightOverPdf;
 						}
 					}
 
-					Indirect = float4((4 * Fd + Fr)/_LightSampleCount, 1);
+					/* INDIRECT SPECULAR */
+					float3 Fr = 0;
+
+					float3 L = reflect(-V, N);
+					float NdotL = saturate(dot(N, L));
+					if (_Specular == 1) {
+						if (NdotL > 0.0f) {
+							float3 H = normalize(V + L);
+							float LdotH = saturate(dot(L, H));
+							float NdotH = saturate(dot(N, H));
+							float weightOverPdf = 0;
+							float VdotH = dot(V, H);
+
+							float Vis = V_SmithGGXCorrelated(NdotL, NdotV, 0.5 + m.Roughness / 2.0);
+							weightOverPdf = 4.0f * Vis * NdotL * VdotH / NdotH;
+
+							//Specular	
+							if (weightOverPdf > 0)
+							{
+								float3 sky = SampleReflection(L.xyz, m.Roughness);
+								Fr += F_Schlick(VdotH, 0.02) * sky * weightOverPdf;
+							}						
+						}
+					}
+
+					Indirect = float4(Fd/_LightSampleCount + Fr, 1);
 				}
 
-				return saturate(Direct + Indirect);				
+				return Direct + Indirect;				
 			}
 
 			Material Gravel(float wetness, float height) {

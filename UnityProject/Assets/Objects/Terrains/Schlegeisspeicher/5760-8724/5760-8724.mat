@@ -395,6 +395,7 @@ Material:
     - _EnableSpecularOcclusion: 0
     - _EnableWind: 0
     - _EnergyConservingSpecularColor: 1
+    - _GlobalIllumination: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -464,6 +465,7 @@ Material:
     - _IridescenceMask: 1
     - _IridescenceThickness: 1
     - _LayerCount: 2
+    - _LightSampleCount: 64
     - _LinkDetailsWithBase: 1
     - _LinkDetailsWithBase0: 1
     - _LinkDetailsWithBase1: 1
@@ -500,7 +502,9 @@ Material:
     - _Parallax: 0.02
     - _PreRefractionPass: 0
     - _RefractionModel: 0
+    - _Roughness: 1
     - _SSRefractionProjectionModel: 0
+    - _ShaderTest: 1
     - _ShiverDirectionality: 0.5
     - _ShiverDrag: 0.2
     - _ShowLayer0: 1
@@ -524,6 +528,7 @@ Material:
     - _SmoothnessRemapMin2: 0
     - _SmoothnessRemapMin3: 0
     - _SmoothnessTextureChannel: 0
+    - _Specular: 1
     - _SpecularAAScreenSpaceVariance: 0.1
     - _SpecularAAThreshold: 0.2
     - _SpecularHighlights: 1

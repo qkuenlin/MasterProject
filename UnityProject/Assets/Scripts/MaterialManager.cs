@@ -743,20 +743,17 @@ public class MaterialManager : MonoBehaviour
 
                 m.SetFloat("_2TanFOVHeight", QualityModifer * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView / 2) / Camera.main.pixelHeight);
 
-                int n_samples = (int)Mathf.Lerp(8.0f, 128.0f, Mathf.Pow(1.0f*QualitySettings.GetQualityLevel() / 6.0f, 2.0f));
+                int n_samples = (int)Mathf.Lerp(4.0f, 64.0f, Mathf.Pow(1.0f*QualitySettings.GetQualityLevel() / 6.0f, 2.0f));
 
                 m.SetInt("_LightSampleCount", n_samples);
-                float r = (n_samples - 8.0f) / 120.0f;
-                m.SetFloat("_SkyMipMapLevel", 1.0f - r);
-
-                Debug.Log(n_samples + "  " + (1.0f - r));                
             }
         }
 
+        
         RaycastHit info;
         if (Physics.Raycast(Camera.main.transform.position, new Vector3(0, -1, 0), out info, 500))
         {
-            reflectionProbe.transform.position = transform.position - new Vector3(0, 2 * (transform.position.y - info.point.y), 0);
+            reflectionProbe.transform.position = transform.position - new Vector3(0, 2.0f*(transform.position.y - info.point.y), 0);
         }
         else
         {
