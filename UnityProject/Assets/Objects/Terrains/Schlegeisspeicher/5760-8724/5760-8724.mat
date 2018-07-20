@@ -465,7 +465,7 @@ Material:
     - _IridescenceMask: 1
     - _IridescenceThickness: 1
     - _LayerCount: 2
-    - _LightSampleCount: 64
+    - _LightSampleCount: 19
     - _LinkDetailsWithBase: 1
     - _LinkDetailsWithBase0: 1
     - _LinkDetailsWithBase1: 1

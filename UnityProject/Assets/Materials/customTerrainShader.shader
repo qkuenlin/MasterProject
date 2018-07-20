@@ -1582,13 +1582,13 @@
 
 						float VdotN = dot(V, VertexNormal);
 						if (VdotN < 1.0 - 1e-7) {
-							float theta = M_PI / 2.0 - acos(VdotN);
+							float theta = M_PI/2 - acos(VdotN);
 							float m_1_cosTheta = 1.0 / cos(theta);
-							float tanTheta = tan(theta);
-							float x = _2TanFOVHeight * Depth / (tanTheta - _2TanFOVHeight);
-							float y = _2TanFOVHeight * Depth / (tanTheta + _2TanFOVHeight);
+							float tanTheta = sin(theta) * m_1_cosTheta;
+							float x = 1.0f / (tanTheta - _2TanFOVHeight);
+							float y = 1.0f / (tanTheta + _2TanFOVHeight);
 
-							texLod = x * m_1_cosTheta + y * m_1_cosTheta;
+							texLod = _2TanFOVHeight * Depth * (x + y)* m_1_cosTheta;
 							texLod /= 1.8;
 						}
 						else {
