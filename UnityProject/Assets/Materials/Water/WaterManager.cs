@@ -82,7 +82,7 @@ public class WaterManager : MonoBehaviour
             generateWaves();
 
             Vector4 lods = new Vector4(2 * Camera.main.pixelHeight / (Mathf.Deg2Rad * Camera.main.fieldOfView),
-                                        100.0F / gridSize, //size in meters of the grid (constant over the whole terrain)
+                                        2445.0f / gridSize, //size in meters of the grid (constant over the whole terrain)
                                         Mathf.Log(lambdaMin) / Mathf.Log(2.0f),
                                         (nbWaves - 1.0f) / (Mathf.Log(lambdaMax) / Mathf.Log(2.0f) - Mathf.Log(lambdaMin) / Mathf.Log(2.0f)));
 

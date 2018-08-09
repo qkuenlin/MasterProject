@@ -786,7 +786,7 @@
 
 				roughness = lerp(roughness, _GravelRoughnessModifier, _GravelRoughnessModifierStrength);
 
-				float wetratio = saturate(2.0*wetness - pow(1.2*(height), 2));
+				float wetratio = saturate(2.0*wetness - pow((height), 2));
 				roughness = lerp(roughness, 0.1, wetratio);
 
 				albedo *= lerp(1.0, 0.6, wetratio);
@@ -899,7 +899,7 @@
 
 				roughness = lerp(roughness, _RockRoughnessModifier, _RockRoughnessModifierStrength);
 
-				float wetratio = saturate(2.0*wetness - pow(1.2*(max(height, height2)), 2));
+				float wetratio = saturate(2.0*wetness - pow((max(height, height2)), 2));
 				roughness = lerp(roughness, 0.1, wetratio);
 
 				albedo *= lerp(1.0, 0.6, wetratio);
@@ -1342,7 +1342,8 @@
 				float3 dPdv = input.dPdv;
 				float2 sigmaSq = input.sigmaSq;
 
-				float iMAX = min(ceil((log2(_nyquistMax * Depth / input.lod) - _lods.z) * _lods.w), _nbWaves - 1.0);
+				float iMAX = min(_nbWaves - 1.0, ceil((log2(_nyquistMax * _lods.y) - _lods.z) * _lods.w));
+
 				float iMax = floor((log2(_nyquistMin * Depth / input.lod) - _lods.z) * _lods.w);
 				float iMin = max(0.0, floor((log2(_nyquistMin * _lods.y / input.lod) - _lods.z) * _lods.w));
 				
@@ -1378,7 +1379,6 @@
 				float3 windNormal = normalize(cross(dPdu, dPdv));
 
 				float3 N = float3(mul(_windToWorld, float4(windNormal.xy, 0, 0)).xy, windNormal.z);				
-				
 				if (dot(V.xzy, N) < 0.0) {
 					N = reflect(N, V.xzy); // reflects backfacing normals
 				}			
@@ -1392,7 +1392,7 @@
 
 				float3 Lsky = fresnel * meanSkyRadiance(V.xzy, N, Tx, Ty, sigmaSq) * saturate(Shadows + 0.25);
 
-				float3 Lsea = (1 - fresnel) * lerp(_WaterColor.rgb, satellite.rgb, 0.5) * _WaterColor.a * Esky(L.y * saturate(Shadows + 0.1)) * M_1_PI;
+				float3 Lsea = (1 - fresnel) * lerp(_WaterColor.rgb, satellite.rgb, 0.5) * _WaterColor.a * Esky(L.y) * saturate(Shadows + 0.1) * M_1_PI;
 
 				float4 WaterColor = float4(Lsea + Lsky + Lsun, 1.0);
 
@@ -1435,8 +1435,9 @@
 
 						float heightBlend = 1.0*(Depth / _LODDistance2);
 
-						if (maxH1 == 0 || maxH0 - maxH1 >= heightBlend) shore = Height2Material(0, gravelH, 0, 0, 0, 0, commonH, maxH0);
+						wetness = 2*weight;
 
+						if (maxH1 == 0 || maxH0 - maxH1 >= heightBlend) shore = Height2Material(0, gravelH, 0, 0, 0, 0, commonH, maxH0);
 						else {
 							Material MaterialH0 = Height2Material(0, gravelH, 0, 0, 0, 0, commonH, maxH0);
 							Material MaterialH1 = Height2Material(0, gravelH, 0, 0, 0, 0, commonH, maxH1);
@@ -1457,11 +1458,12 @@
 					return WaterColor;
 				}
 				else {
-					shore.Roughness = 1;
+					float w = pow(saturate(ShoreHeight + 0.3 - dP), 3);
+					if(w < 1) shore.Roughness = 1;
 					float3 WaterHSL = RGB2HSL(WaterColor.rgb);
 					WaterHSL.g = lerp(WaterHSL.g, 0, pow(saturate(ShoreHeight + 0.3 - dP), 2));
 					WaterColor = float4(HSL2RGB(WaterHSL), 1);
-					return lerp(WaterColor, microfacet(shore), pow(saturate(ShoreHeight + 0.3 - dP), 2));
+					return lerp(WaterColor, microfacet(shore), w);
 				}
 			} 			
 

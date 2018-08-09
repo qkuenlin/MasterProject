@@ -743,7 +743,7 @@ public class MaterialManager : MonoBehaviour
 
                 m.SetFloat("_2TanFOVHeight", QualityModifer * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView / 2) / Camera.main.pixelHeight);
 
-                int n_samples = (int)Mathf.Lerp(4.0f, 64.0f, Mathf.Pow(1.0f*QualitySettings.GetQualityLevel() / 6.0f, 2.0f));
+                int n_samples = (int)Mathf.Ceil(Mathf.Lerp(4.0f, 64.0f, Mathf.Pow(1.0f*QualitySettings.GetQualityLevel() / 5.0f, 2.0f)));
 
                 m.SetInt("_LightSampleCount", n_samples);
             }

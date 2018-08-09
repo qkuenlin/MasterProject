@@ -75,16 +75,16 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _LightSampleCount: 128
+    - _LightSampleCount: 8.01
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Roughness: 1
+    - _Roughness: 0
     - _ShaderTest: 1
     - _SkyMipMapLevel: 0
     - _SmoothnessTextureChannel: 0
-    - _Specular: 0.89
+    - _Specular: 1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0

@@ -504,7 +504,7 @@ Material:
     - _RefractionModel: 0
     - _Roughness: 1
     - _SSRefractionProjectionModel: 0
-    - _ShaderTest: 1
+    - _ShaderTest: 0.856
     - _ShiverDirectionality: 0.5
     - _ShiverDrag: 0.2
     - _ShowLayer0: 1
