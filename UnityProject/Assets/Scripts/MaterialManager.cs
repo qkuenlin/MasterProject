@@ -753,7 +753,7 @@ public class MaterialManager : MonoBehaviour
         RaycastHit info;
         if (Physics.Raycast(Camera.main.transform.position, new Vector3(0, -1, 0), out info, 500))
         {
-            reflectionProbe.transform.position = transform.position - new Vector3(0, 2.0f*(transform.position.y - info.point.y), 0);
+            reflectionProbe.transform.position = transform.position - new Vector3(0, (transform.position.y - info.point.y)-0.1f, 0);
         }
         else
         {
