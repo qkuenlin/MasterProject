@@ -32,7 +32,7 @@ namespace Lerc2017
 {
     class LercDecode
     {
-        const string lercDll = "C:/Users/quen9603/source/repos/ClassificationTool/ClassificationTool/Lerc64.dll";//Lerc64.dll";
+        const string lercDll = @"../../../Lerc64.dll";
 
         // from Lerc_c_api.h :
         // 
