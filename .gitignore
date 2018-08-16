@@ -4,6 +4,9 @@
 [Bb]uild/
 [Bb]uilds/
 [Bb]in/
+[Oo]bj/
+ClassificationTool/ClassificationTool/bin/
+ClassificationTool/ClassificationTool/obj/
 Assets/AssetStoreTools*
 
 # Visual Studio cache directory
